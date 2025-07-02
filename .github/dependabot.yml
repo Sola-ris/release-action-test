@@ -1,0 +1,35 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+  - package-ecosystem: maven
+    directory: /
+    open-pull-requests-limit: 10
+    schedule:
+      interval: daily
+    groups:
+      jersey:
+        patterns:
+          - "version.jersey"
+          - "org.glassfish.jersey.*:*"
+        update-types:
+          - minor
+          - patch
+      resteasy:
+        patterns:
+          - "version.resteasy"
+          - "org.jboss.resteasy:*"
+        update-types:
+          - minor
+          - patch
+      quarkus:
+        patterns:
+          - "version.quarkus"
+          - "io.quarkus:*"
+        update-types:
+          - minor
+          - patch
+    ignore:
+      - dependency-name: "jakarta.ws.rs:jakarta.ws.rs-api"
