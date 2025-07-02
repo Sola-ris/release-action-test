@@ -13,6 +13,7 @@ on:
 jobs:
   release:
     runs-on: ubuntu-latest
+    environment: release-test
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK 17
@@ -30,7 +31,7 @@ jobs:
           /usr/bin/git config --global commit.gpgsign true
           /usr/bin/git config --global user.signingkey ${{ secrets.GPG_KEY_ID }}
           /usr/bin/git config --global user.name 'Sola-ris Releases'
-          /usr/bin/git config --global user.email $RELEASE_MAIL
+          /usr/bin/git config --global user.email '${{ vars.RELEASE_MAIL }}'
       - name: Prepare Release
         run: mvn -B release:prepare -DreleaseVersion=${{ github.event.inputs.release_version }} -DdevelopmentVersion=${{ github.event.inputs.dev_version }} -Dtag=${{ github.event.inputs.release_version }} -Pprepare-release
       - name: Perform Release
