@@ -11,13 +11,15 @@ on:
         required: true
         default: "-SNAPSHOT"
 
+permissions: {}
+
 jobs:
   release:
     runs-on: ubuntu-latest
     environment: release-test
     steps:
-      - uses: GitHubSecurityLab/actions-permissions/monitor@31cf7361439cbdffbc73a3bb138b7e1662d46c9b # v1 Beta 6
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
       - name: Set up JDK 17
         uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00 # v4.7.1
         with:
@@ -28,12 +30,14 @@ jobs:
           server-password: MAVEN_CENTRAL_TOKEN
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
           gpg-private-key: ${{ secrets.GPG_SIGNING_KEY }}
+
       - name: Set up commit signing
         run: |
           /usr/bin/git config --global commit.gpgsign true
           /usr/bin/git config --global user.signingkey ${{ secrets.GPG_KEY_ID }}
           /usr/bin/git config --global user.name 'Sola-ris Releases'
           /usr/bin/git config --global user.email '${{ vars.RELEASE_MAIL }}'
+
       - name: Prepare Release
         env:
           MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSWORD }}
@@ -42,6 +46,7 @@ jobs:
           -DreleaseVersion=${{ github.event.inputs.release_version }} \
           -DdevelopmentVersion=${{ github.event.inputs.dev_version }} \
           -Dtag=${{ github.event.inputs.release_version }} \
+
       - name: Perform Release
         env:
           MAVEN_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
