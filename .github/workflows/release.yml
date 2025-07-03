@@ -1,4 +1,4 @@
-name: JAX-RS Client Test release build
+name: "Release"
 
 on:
   workflow_dispatch:
