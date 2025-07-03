@@ -263,6 +263,45 @@
     </dependencies>
 
     <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-gpg-plugin</artifactId>
+                    <version>3.2.7</version>
+                    <executions>
+                        <execution>
+                            <id>sign-artifacts</id>
+                            <phase>verify</phase>
+                            <goals>
+                                <goal>sign</goal>
+                            </goals>
+                            <configuration>
+                                <gpgArguments>
+                                    <arg>--pinentry-mode</arg>
+                                    <arg>loopback</arg>
+                                </gpgArguments>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-release-plugin</artifactId>
+                    <version>3.1.1</version>
+                    <configuration>
+                        <signTag>true</signTag>
+                        <pushChanges>false</pushChanges>
+                        <localCheckout>true</localCheckout>
+                        <preparationGoals>clean install</preparationGoals>
+                        <releaseProfiles>perform-release</releaseProfiles>
+                        <preparationProfiles>prepare-release</preparationProfiles>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -447,17 +486,12 @@
                 <plugins>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-release-plugin</artifactId>
-                        <version>3.1.1</version>
-                        <configuration>
-                            <signTag>true</signTag>
-                            <pushChanges>false</pushChanges>
-                            <preparationGoals>clean install</preparationGoals>
-                        </configuration>
+                        <artifactId>maven-gpg-plugin</artifactId>
                     </plugin>
                 </plugins>
             </build>
         </profile>
+
         <profile>
             <id>perform-release</id>
             <build>
@@ -479,22 +513,6 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
-                        <version>3.2.7</version>
-                        <executions>
-                            <execution>
-                                <id>sign-artifacts</id>
-                                <phase>verify</phase>
-                                <goals>
-                                    <goal>sign</goal>
-                                </goals>
-                                <configuration>
-                                    <gpgArguments>
-                                        <arg>--pinentry-mode</arg>
-                                        <arg>loopback</arg>
-                                    </gpgArguments>
-                                </configuration>
-                            </execution>
-                        </executions>
                     </plugin>
 
                     <plugin>

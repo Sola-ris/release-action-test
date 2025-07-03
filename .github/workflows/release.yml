@@ -35,6 +35,6 @@ jobs:
           /usr/bin/git config --global user.name 'Sola-ris Releases'
           /usr/bin/git config --global user.email '${{ vars.RELEASE_MAIL }}'
       - name: Prepare Release
-        run: mvn -B release:prepare -DreleaseVersion=${{ github.event.inputs.release_version }} -DdevelopmentVersion=${{ github.event.inputs.dev_version }} -Dtag=${{ github.event.inputs.release_version }} -Pprepare-release
+        run: mvn -B release:prepare -DreleaseVersion=${{ github.event.inputs.release_version }} -DdevelopmentVersion=${{ github.event.inputs.dev_version }} -Dtag=${{ github.event.inputs.release_version }}
       - name: Perform Release
-        run: mvn -B release:perform -Pperform-release -DlocalCheckout=true
+        run: mvn -B release:perform
