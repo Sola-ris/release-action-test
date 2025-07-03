@@ -24,12 +24,8 @@ jobs:
           server-id: "central"
           server-username: MAVEN_USERNAME
           server-password: MAVEN_CENTRAL_TOKEN
-          gpg-private-key: ${{ secrets.GPG_SIGNING_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
-        env:
-          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSWORD }}
-          MAVEN_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
-          MAVEN_CENTRAL_TOKEN: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          gpg-private-key: ${{ secrets.GPG_SIGNING_KEY }}
       - name: Set up commit signing
         run: |
           /usr/bin/git config --global commit.gpgsign true
@@ -41,4 +37,7 @@ jobs:
           MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSWORD }}
         run: mvn -B release:prepare -DreleaseVersion=${{ github.event.inputs.release_version }} -DdevelopmentVersion=${{ github.event.inputs.dev_version }} -Dtag=${{ github.event.inputs.release_version }}
       - name: Perform Release
+        env:
+          MAVEN_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          MAVEN_CENTRAL_TOKEN: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
         run: mvn -B release:perform
