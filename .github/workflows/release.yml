@@ -9,6 +9,7 @@ on:
       dev_version:
         description: "The next development version"
         required: true
+        default: "-SNAPSHOT"
 
 jobs:
   release:
@@ -35,7 +36,11 @@ jobs:
       - name: Prepare Release
         env:
           MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSWORD }}
-        run: mvn -B release:prepare -DreleaseVersion=${{ github.event.inputs.release_version }} -DdevelopmentVersion=${{ github.event.inputs.dev_version }} -Dtag=${{ github.event.inputs.release_version }}
+        run: |
+          mvn -B release:prepare \
+          -DreleaseVersion=${{ github.event.inputs.release_version }} \
+          -DdevelopmentVersion=${{ github.event.inputs.dev_version }} \
+          -Dtag=${{ github.event.inputs.release_version }} \
       - name: Perform Release
         env:
           MAVEN_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
