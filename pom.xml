@@ -45,7 +45,7 @@
         <project.build.outputTimestamp>1980-01-01T00:00:02Z</project.build.outputTimestamp>
 
         <version.jersey>3.1.10</version.jersey>
-        <version.quarkus>3.24.1</version.quarkus>
+        <version.quarkus>3.24.2</version.quarkus>
         <version.resteasy>6.2.12.Final</version.resteasy>
     </properties>
 
