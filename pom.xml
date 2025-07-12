@@ -296,10 +296,12 @@
                     <configuration>
                         <!-- Prepare -->
                         <signTag>true</signTag>
+                        <pushChanges>false</pushChanges>
                         <preparationGoals>clean install</preparationGoals>
                         <preparationProfiles>prepare-release</preparationProfiles>
 
                         <!-- Perform -->
+                        <localCheckout>true</localCheckout>
                         <releaseProfiles>perform-release</releaseProfiles>
                     </configuration>
                 </plugin>
