@@ -22,7 +22,8 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Set up JDK 17
         uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00 # v4.7.1
@@ -49,7 +50,7 @@ jobs:
           mvn -B release:prepare \
           -DreleaseVersion=${{ github.event.inputs.release_version }} \
           -DdevelopmentVersion=${{ github.event.inputs.dev_version }} \
-          -Dtag=${{ github.event.inputs.release_version }} \
+          -Dtag=${{ github.event.inputs.release_version }}
 
       - name: Perform Release
         env:
@@ -61,4 +62,3 @@ jobs:
         run: |
           git push
           git push origin ${{ github.event.inputs.release_version }}
-          
