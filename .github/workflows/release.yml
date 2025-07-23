@@ -47,16 +47,16 @@ jobs:
         env:
           MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSWORD }}
         run: |
-          mvn -B release:prepare \
-          -DreleaseVersion=${{ github.event.inputs.release_version }} \
-          -DdevelopmentVersion=${{ github.event.inputs.dev_version }} \
-          -Dtag=${{ github.event.inputs.release_version }}
+          ./mvnw -B release:prepare \
+            -DreleaseVersion=${{ github.event.inputs.release_version }} \
+            -DdevelopmentVersion=${{ github.event.inputs.dev_version }} \
+            -Dtag=${{ github.event.inputs.release_version }}
 
       - name: Perform Release
         env:
           MAVEN_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
           MAVEN_CENTRAL_TOKEN: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
-        run: mvn -B release:perform
+        run: ./mvnw -B release:perform
 
       - name: Push tag and release commits
         run: |
