@@ -493,9 +493,8 @@
                             <goal>makeBom</goal>
                         </goals>
                         <configuration>
-                            <includeProvidedScope>false</includeProvidedScope>
-                            <includeSystemScope>false</includeSystemScope>
                             <skipNotDeployed>false</skipNotDeployed>
+                            <includeSystemScope>false</includeSystemScope>
                         </configuration>
                     </execution>
                 </executions>
@@ -508,6 +507,25 @@
             <id>prepare-release</id>
             <build>
                 <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-enforcer-plugin</artifactId>
+                        <version>3.6.1</version>
+                        <executions>
+                            <execution>
+                                <id>enforce-release-deps</id>
+                                <goals>
+                                    <goal>enforce</goal>
+                                </goals>
+                                <configuration>
+                                    <rules>
+                                        <requireReleaseDeps/>
+                                    </rules>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
