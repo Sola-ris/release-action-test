@@ -47,7 +47,7 @@
         <maven.compiler.release>17</maven.compiler.release>
 
         <version.jersey>3.1.11</version.jersey>
-        <version.quarkus>3.25.0</version.quarkus>
+        <version.quarkus>3.26.0</version.quarkus>
         <version.resteasy>6.2.12.Final</version.resteasy>
     </properties>
 
