@@ -1,5 +1,9 @@
 # JAX-RS Client Test
 
+![Maven Central Version](https://img.shields.io/maven-central/v/io.github.sola-ris/jax-rs-client-test?color=%234c1)
+[![javadoc](https://javadoc.io/badge2/io.github.sola-ris/jax-rs-client-test/javadoc.svg)](https://javadoc.io/doc/io.github.sola-ris/jax-rs-client-test)
+[![codecov](https://codecov.io/github/sola-ris/release-action-test/graph/badge.svg?token=G71V79NFGU)](https://codecov.io/github/sola-ris/release-action-test)
+
 A library for testing classes that use a JAX-RS Client without starting a full server or relying on mocking libraries.
 
 Heavily inspired by Spring's [Client testing infrastructure](https://docs.spring.io/spring-framework/reference/testing/spring-mvc-test-client.html).
