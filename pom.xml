@@ -507,8 +507,11 @@
             <id>jakarta11</id>
 
             <properties>
-                <version.jersey>4.0.0-M2</version.jersey>
-                <version.resteasy>7.0.0.Alpha4</version.resteasy>
+                <version.jersey.jaxrs4>4.0.0-M2</version.jersey.jaxrs4>
+                <version.resteasy.jaxrs4>7.0.0.Alpha4</version.resteasy.jaxrs4>
+
+                <version.jersey>${version.jersey.jaxrs4}</version.jersey>
+                <version.resteasy>${version.resteasy.jaxrs4}</version.resteasy>
             </properties>
         </profile>
 
