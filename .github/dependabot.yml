@@ -32,9 +32,13 @@ updates:
           - minor
           - patch
       jersey-jaxrs4:
+        allow:
+          - dependency-type: development
         patterns:
           - "version.jersey.jaxrs4"
       resteasy-jaxrs4:
+        allow:
+          - dependency-type: development
         patterns:
           - "version.resteasy.jaxrs4"
     ignore:
