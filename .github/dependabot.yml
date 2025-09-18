@@ -11,8 +11,7 @@ updates:
       interval: daily
     groups:
       jersey:
-        allow:
-          - dependency-type: development
+        dependency-type: development
         patterns:
           - "version.jersey"
           - "org.glassfish.jersey.*:*"
@@ -20,8 +19,7 @@ updates:
           - minor
           - patch
       resteasy:
-        allow:
-          - dependency-type: development
+        dependency-type: development
         patterns:
           - "version.resteasy"
           - "org.jboss.resteasy:*"
