@@ -49,6 +49,9 @@
         <version.jersey>3.1.11</version.jersey>
         <version.quarkus>3.28.0</version.quarkus>
         <version.resteasy>6.2.12.Final</version.resteasy>
+
+        <version.jersey.jaxrs4>4.0.0-M2</version.jersey.jaxrs4>
+        <version.resteasy.jaxrs4>7.0.0.Alpha4</version.resteasy.jaxrs4>
     </properties>
 
     <dependencyManagement>
@@ -507,9 +510,6 @@
             <id>jakarta11</id>
 
             <properties>
-                <version.jersey.jaxrs4>4.0.0-M2</version.jersey.jaxrs4>
-                <version.resteasy.jaxrs4>7.0.0.Alpha4</version.resteasy.jaxrs4>
-
                 <version.jersey>${version.jersey.jaxrs4}</version.jersey>
                 <version.resteasy>${version.resteasy.jaxrs4}</version.resteasy>
             </properties>
