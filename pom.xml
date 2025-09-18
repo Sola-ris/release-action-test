@@ -504,6 +504,15 @@
 
     <profiles>
         <profile>
+            <id>jakarta11</id>
+
+            <properties>
+                <version.jersey>4.0.0-M2</version.jersey>
+                <version.resteasy>7.0.0.Alpha4</version.resteasy>
+            </properties>
+        </profile>
+
+        <profile>
             <id>prepare-release</id>
             <build>
                 <plugins>
