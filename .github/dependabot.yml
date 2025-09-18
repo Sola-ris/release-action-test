@@ -11,6 +11,8 @@ updates:
       interval: daily
     groups:
       jersey:
+        allow:
+          - dependency-type: development
         patterns:
           - "version.jersey"
           - "org.glassfish.jersey.*:*"
@@ -18,6 +20,8 @@ updates:
           - minor
           - patch
       resteasy:
+        allow:
+          - dependency-type: development
         patterns:
           - "version.resteasy"
           - "org.jboss.resteasy:*"
@@ -31,15 +35,5 @@ updates:
         update-types:
           - minor
           - patch
-      jersey-jaxrs4:
-        allow:
-          - dependency-type: development
-        patterns:
-          - "version.jersey.jaxrs4"
-      resteasy-jaxrs4:
-        allow:
-          - dependency-type: development
-        patterns:
-          - "version.resteasy.jaxrs4"
     ignore:
       - dependency-name: "jakarta.ws.rs:jakarta.ws.rs-api"
