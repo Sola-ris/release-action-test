@@ -5,6 +5,7 @@ import java.util.List;
 import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.ext.RuntimeDelegate;
 
+import org.apache.cxf.microprofile.client.spi.CxfRestClientBuilderResolver;
 import org.eclipse.microprofile.rest.client.spi.RestClientBuilderResolver;
 import org.glassfish.jersey.client.JerseyClientBuilder;
 import org.glassfish.jersey.inject.hk2.Hk2InjectionManagerFactory;
@@ -35,7 +36,7 @@ public enum JaxRsVendor {
     CXF(
             org.apache.cxf.jaxrs.impl.RuntimeDelegateImpl.class,
             org.apache.cxf.jaxrs.client.spec.ClientBuilderImpl.class,
-            null
+            CxfRestClientBuilderResolver.class
     ),
     RESTEASY_REACTIVE(
             org.jboss.resteasy.reactive.common.jaxrs.RuntimeDelegateImpl.class,

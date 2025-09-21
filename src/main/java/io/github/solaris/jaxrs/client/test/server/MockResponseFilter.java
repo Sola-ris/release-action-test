@@ -24,7 +24,13 @@ import io.github.solaris.jaxrs.client.test.request.ProvidersEntityConverter;
 
 /**
  * <p>Filter that redirects the current request to a {@link RequestExpectationManager} bound via {@link MockRestServer}.</p>
- * <p>Not intend to for public use, but must be declared {@code public} so JAX-RS implementations can instantiate it.</p>
+ *
+ * <h2>DISCLAIMER</h2>
+ *
+ * <p>
+ *     Not intend to for public use, but must be declared {@code public} so JAX-RS implementations can instantiate it.
+ *     <strong>It may change without warning!</strong>
+ * </p>
  */
 public final class MockResponseFilter implements ClientRequestFilter {
     private static final MethodType GET_PROVIDERS_TYPE = MethodType.methodType(Providers.class);

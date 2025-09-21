@@ -1,5 +1,7 @@
 package io.github.solaris.jaxrs.client.test.request;
 
+import static io.github.solaris.jaxrs.client.test.internal.ArgumentValidator.validateNotBlank;
+import static io.github.solaris.jaxrs.client.test.internal.ArgumentValidator.validateNotNull;
 import static io.github.solaris.jaxrs.client.test.internal.Assertions.assertEqual;
 import static io.github.solaris.jaxrs.client.test.internal.Assertions.assertTrue;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -15,7 +17,6 @@ import java.util.Set;
 
 import javax.xml.XMLConstants;
 import javax.xml.namespace.NamespaceContext;
-import javax.xml.namespace.QName;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.xpath.XPath;
@@ -23,6 +24,7 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
+import javax.xml.xpath.XPathNodes;
 
 import jakarta.ws.rs.client.ClientRequestContext;
 
@@ -39,12 +41,13 @@ import org.xml.sax.InputSource;
  * Requires an Entity Provider for {@code application/xml} to be present and registered with the JAX-RS client component that executed the request.
  * </p>
  */
-public class XpathRequestMatchers {
+public final class XpathRequestMatchers {
     private final String expression;
     private final XPathExpression xPathExpression;
     private final boolean namespaceAware;
 
     XpathRequestMatchers(String expression, @Nullable Map<String, String> namespaces, Object... args) throws XPathExpressionException {
+        validateNotBlank(expression, "XPath expression must not be null or blank.");
         this.expression = expression.formatted(args);
         this.xPathExpression = compile(this.expression, namespaces);
         this.namespaceAware = !(namespaces == null || namespaces.isEmpty());
@@ -59,7 +62,7 @@ public class XpathRequestMatchers {
     }
 
     @SuppressWarnings("unchecked")
-    private @Nullable <T> T evaluate(ClientRequestContext requestContext, Class<T> targetType) throws Exception {
+    private <T extends @Nullable Object> T evaluate(ClientRequestContext requestContext, Class<T> targetType) throws Exception {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         factory.setNamespaceAware(namespaceAware);
         DocumentBuilder builder = factory.newDocumentBuilder();
@@ -71,23 +74,12 @@ public class XpathRequestMatchers {
         inputSource.setEncoding(UTF_8.name());
         Document document = builder.parse(inputSource);
 
-        return (T) xPathExpression.evaluate(document, getQname(targetType));
-    }
-
-    private static <T> QName getQname(Class<T> targetType) {
-        if (Number.class.isAssignableFrom(targetType)) {
-            return XPathConstants.NUMBER;
-        } else if (CharSequence.class.isAssignableFrom(targetType)) {
-            return XPathConstants.STRING;
-        } else if (Boolean.class.isAssignableFrom(targetType)) {
-            return XPathConstants.BOOLEAN;
-        } else if (Node.class.isAssignableFrom(targetType)) {
-            return XPathConstants.NODE;
-        } else if (NodeList.class.isAssignableFrom(targetType)) {
-            return XPathConstants.NODESET;
-        } else {
-            throw new IllegalArgumentException("Unexpected targetType " + targetType + ".");
+        // XPathExpression::evaluateExpression only supports javax.xml.xpath.XPathNodes for NODESET
+        if (NodeList.class.equals(targetType)) {
+            return (T) xPathExpression.evaluate(document, XPathConstants.NODESET);
         }
+
+        return xPathExpression.evaluateExpression(document, targetType);
     }
 
     /**
@@ -117,8 +109,8 @@ public class XpathRequestMatchers {
      */
     public RequestMatcher nodeCount(int expectedCount) {
         return (XpathRequestMatcher) request -> {
-            NodeList nodeList = evaluate(request, NodeList.class);
-            int actualCount = nodeList == null ? 0 : nodeList.getLength();
+            XPathNodes nodes = evaluate(request, XPathNodes.class);
+            int actualCount = nodes == null ? 0 : nodes.size();
             assertEqual("NodeCount for XPath " + expression, expectedCount, actualCount);
         };
     }
@@ -129,6 +121,7 @@ public class XpathRequestMatchers {
      * @param expectedString The expected String value
      */
     public RequestMatcher string(String expectedString) {
+        validateNotNull(expectedString, "'expectedString' must not be null.");
         return (XpathRequestMatcher) request -> {
             String actualString = evaluate(request, String.class);
             assertEqual("XPath " + expression, expectedString, actualString);
@@ -141,6 +134,7 @@ public class XpathRequestMatchers {
      * @param expectedNumber The expected numeric value
      */
     public RequestMatcher number(Double expectedNumber) {
+        validateNotNull(expectedNumber, "'expectedNumber' must not be null.");
         return (XpathRequestMatcher) request -> {
             Double actualNumber = evaluate(request, Double.class);
             assertEqual("XPath " + expression, expectedNumber, actualNumber);
@@ -157,6 +151,26 @@ public class XpathRequestMatchers {
             Boolean actualBoolean = evaluate(request, Boolean.class);
             assertEqual("XPath " + expression, expectedBoolean, actualBoolean);
         };
+    }
+
+    /**
+     * Evaluate the XPath expression, convert it into {@code targetType} and assert the resulting value with the supplied assertion
+     *
+     * @param valueAssertion An arbitrary assertion with which to assert the resulting value
+     * @param targetType     The expected type of the resulting value
+     * @param <T>            The expected type of the resulting value. Possibly null. Supported values:
+     *                       <ul>
+     *                          <li>{@link Node} ({@link XPathConstants#NODE})</li>
+     *                          <li>{@link NodeList} and {@link XPathNodes} ({@link XPathConstants#NODESET})</li>
+     *                          <li>{@link String} ({@link XPathConstants#STRING})</li>
+     *                          <li>{@link Double}, {@link Integer} and {@link Long} ({@link XPathConstants#NUMBER})</li>
+     *                          <li>{@link Boolean} ({@link XPathConstants#BOOLEAN})</li>
+     *                       </ul>
+     */
+    public <T extends @Nullable Object> RequestMatcher valueSatisfies(ThrowingConsumer<T> valueAssertion, Class<T> targetType) {
+        validateNotNull(valueAssertion, "'valueAssertion' must not be null.");
+        validateNotNull(targetType, "'targetType' must not be null.");
+        return (XpathRequestMatcher) request -> valueAssertion.accept(evaluate(request, targetType));
     }
 
     @FunctionalInterface

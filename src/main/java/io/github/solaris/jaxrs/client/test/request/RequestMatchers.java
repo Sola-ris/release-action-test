@@ -1,5 +1,6 @@
 package io.github.solaris.jaxrs.client.test.request;
 
+import static io.github.solaris.jaxrs.client.test.internal.ArgumentValidator.validateNotNull;
 import static io.github.solaris.jaxrs.client.test.internal.Assertions.assertEqual;
 import static io.github.solaris.jaxrs.client.test.internal.Assertions.assertTrue;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -38,6 +39,7 @@ public final class RequestMatchers {
      * @see jakarta.ws.rs.HttpMethod HttpMethod
      */
     public static RequestMatcher method(String httpMethod) {
+        validateNotNull(httpMethod, "'httpMethod' must not be null.");
         return request -> assertEqual("Unexpected Method.", httpMethod, request.getMethod());
     }
 
@@ -47,6 +49,7 @@ public final class RequestMatchers {
      * @param uri The expected URI string
      */
     public static RequestMatcher requestTo(String uri) {
+        validateNotNull(uri, "'uri' must not be null.");
         return request -> assertEqual("Unexpected Request.", URI.create(uri), request.getUri());
     }
 
@@ -56,6 +59,7 @@ public final class RequestMatchers {
      * @param uri The expected URI
      */
     public static RequestMatcher requestTo(URI uri) {
+        validateNotNull(uri, "'uri' must not be null.");
         return request -> assertEqual("Unexpected Request.", uri, request.getUri());
     }
 
@@ -69,6 +73,8 @@ public final class RequestMatchers {
      *                       <p>The n<sup>th</sup> expected value is compared to the n<sup>th</sup> query parameter value</p>
      */
     public static RequestMatcher queryParam(String name, String... expectedValues) {
+        validateNotNull(name, "'name' must not be null.");
+        validateNotNull(expectedValues, "'expectedValues' must not be null.");
         return request -> {
             MultivaluedMap<String, String> queryParams = getQueryParams(request.getUri());
 
@@ -89,6 +95,7 @@ public final class RequestMatchers {
      * @param name The name of query parameter
      */
     public static RequestMatcher queryParamDoesNotExist(String name) {
+        validateNotNull(name, "'name' must not be null.");
         return request -> {
             List<String> queryParamsValues = getQueryParams(request.getUri()).get(name);
             if (queryParamsValues != null) {
@@ -122,6 +129,8 @@ public final class RequestMatchers {
      *                       <p>The n<sup>th</sup> expected value is compared to the n<sup>th</sup> header value</p>
      */
     public static RequestMatcher header(String name, String... expectedValues) {
+        validateNotNull(name, "'name' must not be null.");
+        validateNotNull(expectedValues, "'expectedValues' must not be null.");
         return request -> {
             List<String> actualValues = request.getStringHeaders().get(name);
 
@@ -142,6 +151,7 @@ public final class RequestMatchers {
      * @param name The name of the header
      */
     public static RequestMatcher headerDoesNotExist(String name) {
+        validateNotNull(name, "'name' must not be null.");
         return request -> {
             List<Object> headerValues = request.getHeaders().get(name);
             if (headerValues != null) {
@@ -197,13 +207,15 @@ public final class RequestMatchers {
     }
 
     private static MultivaluedMap<String, String> getQueryParams(URI uri) {
-        if (uri.getQuery() == null) {
+        if (uri.getRawQuery() == null || uri.getRawQuery().isEmpty()) {
             return EMPTY_QUERY_PARAMS;
         }
-        return Arrays.stream(uri.getQuery().split("&"))
-                .map(query -> URLDecoder.decode(query, UTF_8))
-                .filter(query -> !"".equals(query))
+
+        return Arrays.stream(uri.getRawQuery().split("&"))
                 .map(query -> query.split("=", 2))
-                .collect(MultivaluedHashMap::new, (map, query) -> map.add(query[0], query.length == 2 ? query[1] : ""), MultivaluedMap::putAll);
+                .collect(MultivaluedHashMap::new, (map, query) -> map.add(
+                        URLDecoder.decode(query[0], UTF_8),
+                        query.length == 2 ? URLDecoder.decode(query[1], UTF_8) : ""
+                ), MultivaluedMap::putAll);
     }
 }

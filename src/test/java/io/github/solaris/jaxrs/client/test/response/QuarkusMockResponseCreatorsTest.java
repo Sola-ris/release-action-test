@@ -1,18 +1,18 @@
-package io.github.solaris.jaxrs.client.test.server;
+package io.github.solaris.jaxrs.client.test.response;
 
 import io.github.solaris.jaxrs.client.test.util.extension.QuarkusTestFactory;
 import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
-class QuarkusAsyncRequestTest extends QuarkusTestFactory {
+class QuarkusMockResponseCreatorsTest extends QuarkusTestFactory {
 
     @Override
     protected Class<?> getTestClass() {
-        return AsyncRequestTest.MicroProfileRestClient.class;
+        return MockResponseCreatorsTest.WithEntity.class;
     }
 
     @Override
     protected Object getTestInstance() {
-        return new AsyncRequestTest().new MicroProfileRestClient();
+        return new MockResponseCreatorsTest().new WithEntity();
     }
 }

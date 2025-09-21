@@ -1,7 +1,9 @@
 package io.github.solaris.jaxrs.client.test.request;
 
+import static io.github.solaris.jaxrs.client.test.internal.ArgumentValidator.validateNotNull;
 import static jakarta.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static jakarta.ws.rs.core.MediaType.MULTIPART_FORM_DATA;
+import static jakarta.ws.rs.core.MediaType.MULTIPART_FORM_DATA_TYPE;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -46,6 +48,7 @@ public abstract sealed class EntityConverter permits ClientEntityConverter, Prov
      * @return The {@code EntityConverter} instance
      */
     public static EntityConverter fromRequestContext(ClientRequestContext requestContext) {
+        validateNotNull(requestContext, "'requestContext' must not be null.");
         if (requestContext.getProperty(EntityConverter.class.getName()) instanceof EntityConverter entityConverter) {
             return entityConverter;
         }
@@ -62,6 +65,7 @@ public abstract sealed class EntityConverter permits ClientEntityConverter, Prov
      * @throws IOException If an I/O error occurs during buffering
      */
     public List<EntityPart> bufferExpectedMultipart(List<EntityPart> entityParts) throws IOException {
+        validateNotNull(entityParts, "'expectedParts' must not be null.");
         List<EntityPart> bufferedParts = new ArrayList<>();
         for (EntityPart entityPart : serializeEntityParts(new MultiPartRequestContext(entityParts))) {
             bufferedParts.add(new BufferedEntityPart(entityPart, this));
@@ -82,6 +86,8 @@ public abstract sealed class EntityConverter permits ClientEntityConverter, Prov
      * @throws IOException If an I/O error occurs during buffering
      */
     public List<EntityPart> bufferMultipartRequest(ClientRequestContext requestContext) throws IOException {
+        assertMultiPartEntityPresent(requestContext);
+
         List<BufferedEntityPart> bufferedParts = new ArrayList<>();
         for (EntityPart entityPart : serializeEntityParts(requestContext)) {
             bufferedParts.add(new BufferedEntityPart(entityPart, this));
@@ -124,6 +130,20 @@ public abstract sealed class EntityConverter permits ClientEntityConverter, Prov
         }
         return type.isAssignableFrom(requestContext.getEntityClass())
                 && Objects.equals(requestContext.getEntityType(), genericType);
+    }
+
+    static void assertEntityPresent(ClientRequestContext requestContext) {
+        if (!requestContext.hasEntity()) {
+            throw new AssertionError("Request contains no entity to convert.");
+        }
+    }
+
+    static void assertMultiPartEntityPresent(ClientRequestContext requestContext) {
+        validateNotNull(requestContext, "'requestContext' must not be null.");
+        assertEntityPresent(requestContext);
+        if (!MULTIPART_FORM_DATA_TYPE.equals(requestContext.getMediaType())) {
+            throw new AssertionError("MediaType must be " + MULTIPART_FORM_DATA);
+        }
     }
 
     // Jersey expects each EntityPart to be an instance of org.glassfish.jersey.media.multipart.BodyPart which BufferedEntityPart isn't,

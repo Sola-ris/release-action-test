@@ -1,5 +1,6 @@
 package io.github.solaris.jaxrs.client.test.response;
 
+import static io.github.solaris.jaxrs.client.test.request.RequestMatchers.anything;
 import static io.github.solaris.jaxrs.client.test.util.extension.JaxRsVendor.CXF;
 import static jakarta.ws.rs.core.HttpHeaders.RETRY_AFTER;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON_TYPE;
@@ -23,51 +24,35 @@ import static jakarta.ws.rs.core.Response.Status.UNAVAILABLE_FOR_LEGAL_REASONS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.io.IOException;
 import java.net.SocketException;
 import java.net.URI;
 
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.core.Response;
 
+import org.junit.jupiter.api.AutoClose;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import io.github.solaris.jaxrs.client.test.server.MockRestServer;
+import io.github.solaris.jaxrs.client.test.util.Dto;
 import io.github.solaris.jaxrs.client.test.util.MockClientRequestContext;
 import io.github.solaris.jaxrs.client.test.util.extension.JaxRsVendorTest;
+import io.github.solaris.jaxrs.client.test.util.extension.RunInQuarkus;
 
 class MockResponseCreatorsTest {
 
     @JaxRsVendorTest
-    void testSuccess() {
+    void testSuccess() throws IOException {
         try (Response response = MockResponseCreators.withSuccess().createResponse(new MockClientRequestContext())) {
             assertThat(response.getStatusInfo().toEnum()).isEqualTo(OK);
         }
     }
 
     @JaxRsVendorTest
-    void testSuccess_withEntity() {
-        String json = "{\"hello\": true}";
-        try (Response response = MockResponseCreators.withSuccess(json, null).createResponse(new MockClientRequestContext())) {
-            assertThat(response).satisfies(
-                    r -> assertThat(r.getStatusInfo().toEnum()).isEqualTo(OK),
-                    r -> assertThat(r.getMediaType()).isNull(),
-                    r -> assertThat(r.getEntity()).isEqualTo(json)
-            );
-        }
-    }
-
-    @JaxRsVendorTest
-    void testSuccess_withEntityAndMediaType() {
-        String json = "{\"hello\": true}";
-        try (Response response = MockResponseCreators.withSuccess(json, APPLICATION_JSON_TYPE).createResponse(new MockClientRequestContext())) {
-            assertThat(response).satisfies(
-                    r -> assertThat(r.getStatusInfo().toEnum()).isEqualTo(OK),
-                    r -> assertThat(r.getMediaType()).isEqualTo(APPLICATION_JSON_TYPE),
-                    r -> assertThat(r.getEntity()).isEqualTo(json)
-            );
-        }
-    }
-
-    @JaxRsVendorTest
-    void testCreated() {
+    void testCreated() throws IOException {
         URI location = URI.create("local.host");
         try (Response response = MockResponseCreators.withCreated(location).createResponse(new MockClientRequestContext())) {
             assertThat(response).satisfies(
@@ -78,63 +63,63 @@ class MockResponseCreatorsTest {
     }
 
     @JaxRsVendorTest
-    void testAccepted() {
+    void testAccepted() throws IOException {
         try (Response response = MockResponseCreators.withAccepted().createResponse(new MockClientRequestContext())) {
             assertThat(response.getStatusInfo().toEnum()).isEqualTo(ACCEPTED);
         }
     }
 
     @JaxRsVendorTest
-    void testNoContent() {
+    void testNoContent() throws IOException {
         try (Response response = MockResponseCreators.withNoContent().createResponse(new MockClientRequestContext())) {
             assertThat(response.getStatusInfo().toEnum()).isEqualTo(NO_CONTENT);
         }
     }
 
     @JaxRsVendorTest
-    void testBadRequest() {
+    void testBadRequest() throws IOException {
         try (Response response = MockResponseCreators.withBadRequest().createResponse(new MockClientRequestContext())) {
             assertThat(response.getStatusInfo().toEnum()).isEqualTo(BAD_REQUEST);
         }
     }
 
     @JaxRsVendorTest
-    void testUnauthorized() {
+    void testUnauthorized() throws IOException {
         try (Response response = MockResponseCreators.withUnauthorized().createResponse(new MockClientRequestContext())) {
             assertThat(response.getStatusInfo().toEnum()).isEqualTo(UNAUTHORIZED);
         }
     }
 
     @JaxRsVendorTest
-    void testForbidden() {
+    void testForbidden() throws IOException {
         try (Response response = MockResponseCreators.withForbidden().createResponse(new MockClientRequestContext())) {
             assertThat(response.getStatusInfo().toEnum()).isEqualTo(FORBIDDEN);
         }
     }
 
     @JaxRsVendorTest
-    void testNotFound() {
+    void testNotFound() throws IOException {
         try (Response response = MockResponseCreators.withNotFound().createResponse(new MockClientRequestContext())) {
             assertThat(response.getStatusInfo().toEnum()).isEqualTo(NOT_FOUND);
         }
     }
 
     @JaxRsVendorTest
-    void testConflict() {
+    void testConflict() throws IOException {
         try (Response response = MockResponseCreators.withConflict().createResponse(new MockClientRequestContext())) {
             assertThat(response.getStatusInfo().toEnum()).isEqualTo(CONFLICT);
         }
     }
 
     @JaxRsVendorTest
-    void testTooManyRequests() {
+    void testTooManyRequests() throws IOException {
         try (Response response = MockResponseCreators.withTooManyRequests().createResponse(new MockClientRequestContext())) {
             assertThat(response.getStatusInfo().toEnum()).isEqualTo(TOO_MANY_REQUESTS);
         }
     }
 
     @JaxRsVendorTest
-    void testTooManyRequests_withRetryAfter() {
+    void testTooManyRequests_withRetryAfter() throws IOException {
         try (Response response = MockResponseCreators.withTooManyRequests(42).createResponse(new MockClientRequestContext())) {
             assertThat(response).satisfies(
                     r -> assertThat(r.getStatusInfo().toEnum()).isEqualTo(TOO_MANY_REQUESTS),
@@ -144,42 +129,42 @@ class MockResponseCreatorsTest {
     }
 
     @JaxRsVendorTest
-    void testInternalServerError() {
+    void testInternalServerError() throws IOException {
         try (Response response = MockResponseCreators.withInternalServerError().createResponse(new MockClientRequestContext())) {
             assertThat(response.getStatusInfo().toEnum()).isEqualTo(INTERNAL_SERVER_ERROR);
         }
     }
 
     @JaxRsVendorTest
-    void testServiceUnavailable() {
+    void testServiceUnavailable() throws IOException {
         try (Response response = MockResponseCreators.withServiceUnavailable().createResponse(new MockClientRequestContext())) {
             assertThat(response.getStatusInfo().toEnum()).isEqualTo(SERVICE_UNAVAILABLE);
         }
     }
 
     @JaxRsVendorTest
-    void testGatewayTimeout() {
+    void testGatewayTimeout() throws IOException {
         try (Response response = MockResponseCreators.withGatewayTimeout().createResponse(new MockClientRequestContext())) {
             assertThat(response.getStatusInfo().toEnum()).isEqualTo(GATEWAY_TIMEOUT);
         }
     }
 
     @JaxRsVendorTest
-    void testStatus() {
+    void testStatus() throws IOException {
         try (Response response = MockResponseCreators.withStatus(LENGTH_REQUIRED).createResponse(new MockClientRequestContext())) {
             assertThat(response.getStatusInfo().toEnum()).isEqualTo(LENGTH_REQUIRED);
         }
     }
 
     @JaxRsVendorTest
-    void testCustomStatus_definedInStatusEnum() {
+    void testCustomStatus_definedInStatusEnum() throws IOException {
         try (Response response = MockResponseCreators.withStatus(451).createResponse(new MockClientRequestContext())) {
             assertThat(response.getStatusInfo().toEnum()).isEqualTo(UNAVAILABLE_FOR_LEGAL_REASONS);
         }
     }
 
     @JaxRsVendorTest
-    void testCustomStatus_notDefinedInStatusEnum() {
+    void testCustomStatus_notDefinedInStatusEnum() throws IOException {
         try (Response response = MockResponseCreators.withStatus(418).createResponse(new MockClientRequestContext())) {
             assertThat(response).satisfies(
                     r -> assertThat(r.getStatus()).isEqualTo(418),
@@ -191,7 +176,7 @@ class MockResponseCreatorsTest {
 
     // CXF doesn't support status codes > 599
     @JaxRsVendorTest(skipFor = CXF)
-    void testCustomStatus_familyOther() {
+    void testCustomStatus_familyOther() throws IOException {
         try (Response response = MockResponseCreators.withStatus(999).createResponse(new MockClientRequestContext())) {
             assertThat(response).satisfies(
                     r -> assertThat(r.getStatus()).isEqualTo(999),
@@ -203,8 +188,55 @@ class MockResponseCreatorsTest {
 
     @Test
     void testException() {
-        assertThatThrownBy(() -> MockResponseCreators.withException(new SocketException("Connection Reset")).createResponse(new MockClientRequestContext()).close())
+        assertThatThrownBy(
+                () -> MockResponseCreators.withException(new SocketException("Connection Reset"))
+                        .createResponse(new MockClientRequestContext()).close())
                 .isInstanceOf(SocketException.class)
                 .hasMessage("Connection Reset");
+    }
+
+    @Test
+    @SuppressWarnings("DataFlowIssue")
+    void testException_null() {
+        assertThatThrownBy(() -> MockResponseCreators.withException(null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("'ioe' must not be null.");
+    }
+
+    @Nested
+    @RunInQuarkus
+    class WithEntity {
+        private static final String JSON_STRING = "{\"something\":\"hello\"}";
+
+        @AutoClose
+        private final Client client = ClientBuilder.newClient();
+
+        private final MockRestServer server = MockRestServer.bindTo(client).build();
+
+        @JaxRsVendorTest
+        void testSuccess_withEntityAndMediaType() {
+            Dto dto = new Dto("hello");
+
+            server.expect(anything()).andRespond(MockResponseCreators.withSuccess(dto, APPLICATION_JSON_TYPE));
+
+            try (Response response = client.target("").request().get()) {
+                assertThat(response).satisfies(
+                        r -> assertThat(r.readEntity(Dto.class)).isEqualTo(dto)
+                );
+            }
+        }
+
+        @JaxRsVendorTest
+        void testSuccess_withEntityAndMediaType_convertOnRead() {
+            Dto dto = new Dto("hello");
+
+            server.expect(anything()).andRespond(MockResponseCreators.withSuccess(dto, APPLICATION_JSON_TYPE));
+
+            try (Response response = client.target("").request().get()) {
+                assertThat(response).satisfies(
+                        r -> assertThat(r.readEntity(String.class)).isEqualTo(JSON_STRING)
+                );
+            }
+        }
     }
 }

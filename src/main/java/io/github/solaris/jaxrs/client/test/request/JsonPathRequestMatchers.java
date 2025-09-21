@@ -1,17 +1,26 @@
 package io.github.solaris.jaxrs.client.test.request;
 
+import static io.github.solaris.jaxrs.client.test.internal.ArgumentValidator.validateNotBlank;
+import static io.github.solaris.jaxrs.client.test.internal.ArgumentValidator.validateNotNull;
 import static io.github.solaris.jaxrs.client.test.internal.Assertions.assertEqual;
 import static io.github.solaris.jaxrs.client.test.internal.Assertions.assertTrue;
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import jakarta.ws.rs.client.ClientRequestContext;
+import jakarta.ws.rs.core.GenericType;
 
 import org.jspecify.annotations.Nullable;
 
+import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.TypeRef;
+import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
+import com.jayway.jsonpath.spi.mapper.MappingProvider;
 
 /**
  * Factory for {@link RequestMatcher} implementations that use a <a href="https://github.com/jayway/JsonPath">JsonPath</a> expression.
@@ -20,12 +29,14 @@ import com.jayway.jsonpath.JsonPath;
  * Requires an Entity Provider for {@code application/json} to be present and registered with the JAX-RS client component that executed the request.
  * </p>
  */
-public class JsonPathRequestMatchers {
+public final class JsonPathRequestMatchers {
+    private static final Supplier<MappingProvider> JACKSON_SUPPLIER = JacksonMappingProvider::new;
 
     private final String expression;
     private final JsonPath jsonPath;
 
     JsonPathRequestMatchers(String expression, Object... args) {
+        validateNotBlank(expression, "JsonPath expression must not be null or blank.");
         this.expression = expression.formatted(args);
         this.jsonPath = JsonPath.compile(this.expression);
     }
@@ -40,6 +51,8 @@ public class JsonPathRequestMatchers {
      * If the JsonPath expression is not {@linkplain JsonPath#isDefinite() definite}
      * and evaluates to an array containing <b>multiple</b> values, an {@link AssertionError} will be thrown.
      * </p>
+     * <h4>Note:</h4>
+     * If {@code expectedValue} is a {@code record}, Jackson must be available at runtime.
      *
      * @param expectedValue The expected value, possibly {@code null}
      */
@@ -199,6 +212,48 @@ public class JsonPathRequestMatchers {
         };
     }
 
+    /**
+     * Evaluate the JsonPath expression, convert it into {@code targetType} and assert the resulting value with the supplied assertion
+     *
+     * @param valueAssertion An arbitrary assertion with which to assert the resulting value
+     * @param targetType     The expected type of the resulting value
+     * @param <T>            The expected type of the resulting value. Possibly null.
+     *                       <h4>Note:</h4>
+     *                       If {@code <T>} is a {@code record}, Jackson must be available at runtime.
+     */
+    public <T extends @Nullable Object> RequestMatcher valueSatisfies(ThrowingConsumer<T> valueAssertion, Class<T> targetType) {
+        validateNotNull(valueAssertion, "'valueAssertion' must not be null.");
+        validateNotNull(targetType, "'targetType' must not be null.");
+        return request -> {
+            try {
+                valueAssertion.accept(evaluate(getJsonString(request), targetType));
+            } catch (Exception e) {
+                throw new AssertionError(e);
+            }
+        };
+    }
+
+    /**
+     * Evaluate the JsonPath expression, convert it into {@code targetType} and assert the resulting value with the supplied assertion
+     *
+     * @param valueAssertion An arbitrary assertion with which to assert the resulting value
+     * @param targetType     The expected generic type of the resulting value
+     * @param <T>            The expected generic type of the resulting value. Possibly null.
+     *                       <h4>Note:</h4>
+     *                       This {@link RequestMatcher} requires Jackson to be available at runtime.
+     */
+    public <T extends @Nullable Object> RequestMatcher valueSatisfies(ThrowingConsumer<T> valueAssertion, GenericType<T> targetType) {
+        validateNotNull(valueAssertion, "'valueAssertion' must not be null.");
+        validateNotNull(targetType, "'targetType' must not be null.");
+        return request -> {
+            try {
+                valueAssertion.accept(evaluate(getJsonString(request), targetType));
+            } catch (Exception e) {
+                throw new AssertionError(e);
+            }
+        };
+    }
+
     private Object assertExistsAndGet(String jsonString) {
         Object value = evaluate(jsonString);
         String message = "Found no value for JSON path \"" + expression + "\"";
@@ -223,11 +278,31 @@ public class JsonPathRequestMatchers {
         }
     }
 
-    private <T> T evaluate(String jsonString, Class<T> type) {
+    private <T extends @Nullable Object> T evaluate(String jsonString, Class<T> type) {
         try {
-            return JsonPath.parse(jsonString).read(expression, type);
+            if (type.isRecord()) {
+                return JsonPath.parse(jsonString, getJacksonConfiguration()).read(expression, type);
+            } else {
+                return JsonPath.parse(jsonString).read(expression, type);
+            }
         } catch (Throwable t) {
             throw new AssertionError("Failed to evaluate JSON path \"" + expression + "\" with type " + type, t);
+        }
+    }
+
+    private <T extends @Nullable Object> T evaluate(String jsonString, GenericType<T> type) {
+        try {
+            return JsonPath.parse(jsonString, getJacksonConfiguration()).read(expression, new TypeRefAdapter<>(type));
+        } catch (Throwable t) {
+            throw new AssertionError("Failed to evaluate JSON path \"" + expression + "\" with type " + type, t);
+        }
+    }
+
+    private static Configuration getJacksonConfiguration() {
+        try {
+            return Configuration.defaultConfiguration().mappingProvider(JACKSON_SUPPLIER.get());
+        } catch (Throwable e) {
+            throw new IllegalStateException("Unable to load Jackson.", e);
         }
     }
 
@@ -239,5 +314,18 @@ public class JsonPathRequestMatchers {
     private static String getJsonString(ClientRequestContext requestContext) throws IOException {
         EntityConverter converter = EntityConverter.fromRequestContext(requestContext);
         return converter.convertEntity(requestContext, String.class);
+    }
+
+    private static final class TypeRefAdapter<T> extends TypeRef<T> {
+        private final Type type;
+
+        private TypeRefAdapter(GenericType<T> genericType) {
+            this.type = genericType.getType();
+        }
+
+        @Override
+        public Type getType() {
+            return type;
+        }
     }
 }

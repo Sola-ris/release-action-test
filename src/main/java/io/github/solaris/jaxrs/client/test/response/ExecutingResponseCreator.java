@@ -1,5 +1,7 @@
 package io.github.solaris.jaxrs.client.test.response;
 
+import static io.github.solaris.jaxrs.client.test.internal.ArgumentValidator.validateNotNull;
+
 import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.client.ClientRequestContext;
@@ -41,6 +43,7 @@ public class ExecutingResponseCreator implements ResponseCreator {
      * The caller is responsible for closing the {@code Client}.
      */
     public ExecutingResponseCreator(Client client) {
+        validateNotNull(client, "'client' must not be null.");
         this.client = client;
     }
 

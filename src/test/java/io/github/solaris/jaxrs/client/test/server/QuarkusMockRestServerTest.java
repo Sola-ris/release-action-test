@@ -7,6 +7,11 @@ import io.quarkus.test.junit.QuarkusTest;
 class QuarkusMockRestServerTest extends QuarkusTestFactory {
 
     @Override
+    protected Class<?> getTestClass() {
+        return MockRestServerTest.BindMicroProfileRestClientBuilder.class;
+    }
+
+    @Override
     protected Object getTestInstance() {
         return new MockRestServerTest().new BindMicroProfileRestClientBuilder();
     }

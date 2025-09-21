@@ -1,5 +1,7 @@
 package io.github.solaris.jaxrs.client.test.manager;
 
+import static io.github.solaris.jaxrs.client.test.internal.ArgumentValidator.validateNotNull;
+
 import java.io.IOException;
 import java.net.URI;
 import java.time.Duration;
@@ -27,8 +29,6 @@ public abstract class RequestExpectationManager {
     private final List<ClientRequestContext> requests = new ArrayList<>();
     private final Map<ClientRequestContext, Throwable> failedRequests = new LinkedHashMap<>();
 
-    private boolean expectationsDeclared = false;
-
     RequestExpectationManager() {}
 
     abstract void expectationsDeclared();
@@ -44,7 +44,7 @@ public abstract class RequestExpectationManager {
      * @see io.github.solaris.jaxrs.client.test.server.MockRestServer#expect(ExpectedCount, RequestMatcher) MockRestServer.expect(ExpectedCount, RequestMatcher)
      */
     public ResponseActions expectRequest(ExpectedCount count, RequestMatcher requestMatcher) {
-        if (expectationsDeclared) {
+        if (!requests.isEmpty()) {
             throw new IllegalStateException("Cannot declare further expectations after the first request.");
         }
 
@@ -64,7 +64,6 @@ public abstract class RequestExpectationManager {
         RequestExpectation expectation;
         synchronized (requests) {
             if (requests.isEmpty()) {
-                expectationsDeclared = true;
                 expectationsDeclared();
             }
 
@@ -99,6 +98,7 @@ public abstract class RequestExpectationManager {
      * @see io.github.solaris.jaxrs.client.test.server.MockRestServer#verify(Duration) MockRestServer.verify(Duration)
      */
     public void verify(Duration timeout) {
+        validateNotNull(timeout, "'timeout' must not be null.");
         Instant end = Instant.now().plus(timeout);
         do {
             if (countUnsatisfiedExpectations() == 0) {
@@ -117,7 +117,6 @@ public abstract class RequestExpectationManager {
         requests.clear();
         expectations.clear();
         failedRequests.clear();
-        expectationsDeclared = false;
     }
 
     private long countUnsatisfiedExpectations() {
@@ -128,7 +127,8 @@ public abstract class RequestExpectationManager {
         if (!failedRequests.isEmpty()) {
             throw new AssertionError("Some requests did not execute successfully.\n" +
                     failedRequests.entrySet().stream()
-                            .map(entry -> "Failed request:\n" + contextToString(entry.getKey()) + "\n" + entry.getValue())
+                            .map(entry -> "Failed request:\n"
+                                    + contextToString(entry.getKey()) + "\n" + entry.getValue())
                             .collect(Collectors.joining("\n", "\n", "")));
         }
 

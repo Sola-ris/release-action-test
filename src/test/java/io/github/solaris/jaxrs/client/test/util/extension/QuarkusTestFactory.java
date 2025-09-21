@@ -18,23 +18,26 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
 import org.junit.platform.commons.support.ReflectionSupport;
 
-import io.github.solaris.jaxrs.client.test.util.ConfiguredClientSupplier;
-import io.github.solaris.jaxrs.client.test.util.ConfiguredClientSupplier.DefaultClientSupplier;
 import io.github.solaris.jaxrs.client.test.util.FilterExceptionAssert;
 import io.github.solaris.jaxrs.client.test.util.FilterExceptionAssert.DefaultFilterExceptionAssert;
+import io.github.solaris.jaxrs.client.test.util.extension.classpath.JacksonFreeTest;
 
 public abstract class QuarkusTestFactory {
+
+    protected abstract Class<?> getTestClass();
 
     protected abstract Object getTestInstance();
 
     @TestFactory
     Stream<DynamicNode> generate() {
-        return ReflectionSupport.streamMethods(getTestInstance().getClass(), method -> method.isAnnotationPresent(JaxRsVendorTest.class), TOP_DOWN)
+        RuntimeDelegate.setInstance(null);
+        RestClientBuilderResolver.setInstance(null);
+
+        return ReflectionSupport.streamMethods(getTestClass(), method -> method.isAnnotationPresent(JaxRsVendorTest.class), TOP_DOWN)
+                .filter(method -> !method.isAnnotationPresent(JacksonFreeTest.class))
                 .map(method -> DynamicTest.dynamicTest(generateMethodName(method), () -> {
                     ClassLoader oldClassLoader = Thread.currentThread().getContextClassLoader();
                     try {
-                        RuntimeDelegate.setInstance(null);
-                        RestClientBuilderResolver.setInstance(null);
                         Thread.currentThread().setContextClassLoader(RESTEASY_REACTIVE.getVendorClassLoader());
                         ReflectionSupport.invokeMethod(method, getTestInstance(), getArgs(method));
                     } finally {
@@ -56,8 +59,6 @@ public abstract class QuarkusTestFactory {
         for (Class<?> parameterType : method.getParameterTypes()) {
             if (parameterType.equals(FilterExceptionAssert.class)) {
                 args.add(new DefaultFilterExceptionAssert());
-            } else if (parameterType.equals(ConfiguredClientSupplier.class)) {
-                args.add(new DefaultClientSupplier());
             } else {
                 throw new IllegalArgumentException("Unexpected parameter type " + parameterType);
             }

@@ -12,6 +12,7 @@ public sealed interface FilterExceptionAssert {
     AbstractThrowableAssert<?, ? extends Throwable> assertThatThrownBy(ThrowingCallable throwingCallable);
 
     final class CxfFilterExceptionAssert implements FilterExceptionAssert {
+
         @Override
         public AbstractThrowableAssert<?, ? extends Throwable> assertThatThrownBy(ThrowingCallable throwingCallable) {
             try {
@@ -29,7 +30,18 @@ public sealed interface FilterExceptionAssert {
         }
     }
 
+    final class CxfMicroProfileFilterExceptionAssert implements FilterExceptionAssert {
+
+        @Override
+        public AbstractThrowableAssert<?, ? extends Throwable> assertThatThrownBy(ThrowingCallable throwingCallable) {
+            return Assertions.assertThatThrownBy(throwingCallable)
+                    .isInstanceOf(RuntimeException.class)
+                    .cause();
+        }
+    }
+
     final class DefaultFilterExceptionAssert implements FilterExceptionAssert {
+
         @Override
         public AbstractThrowableAssert<?, ? extends Throwable> assertThatThrownBy(ThrowingCallable throwingCallable) {
             return Assertions.assertThatThrownBy(throwingCallable)

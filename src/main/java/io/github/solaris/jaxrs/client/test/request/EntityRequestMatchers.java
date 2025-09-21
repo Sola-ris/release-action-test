@@ -1,5 +1,6 @@
 package io.github.solaris.jaxrs.client.test.request;
 
+import static io.github.solaris.jaxrs.client.test.internal.ArgumentValidator.validateNotNull;
 import static io.github.solaris.jaxrs.client.test.internal.Assertions.assertEqual;
 import static io.github.solaris.jaxrs.client.test.internal.Assertions.assertTrue;
 
@@ -10,6 +11,8 @@ import jakarta.ws.rs.core.EntityPart;
 import jakarta.ws.rs.core.Form;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.MultivaluedMap;
+
+import org.jspecify.annotations.Nullable;
 
 /**
  * Factory for {@link RequestMatcher} implementations related to the request {@code entity}.
@@ -25,6 +28,7 @@ public final class EntityRequestMatchers {
      * @param mediaType The expected content of the {@code Content-Type} header
      */
     public RequestMatcher mediaType(String mediaType) {
+        validateNotNull(mediaType, "'mediaType' must not be null.");
         return mediaType(MediaType.valueOf(mediaType));
     }
 
@@ -34,6 +38,7 @@ public final class EntityRequestMatchers {
      * @param mediaType The expected content of the {@code Content-Type} header
      */
     public RequestMatcher mediaType(MediaType mediaType) {
+        validateNotNull(mediaType, "'mediaType' must not be null.");
         return request -> {
             MediaType actual = request.getMediaType();
             assertTrue("MediaType was not set.", actual != null);
@@ -46,20 +51,21 @@ public final class EntityRequestMatchers {
      *
      * @param expected The expected request entity
      */
-    public RequestMatcher isEqualTo(Object expected) {
+    public RequestMatcher isEqualTo(@Nullable Object expected) {
         return request -> assertEqual("Entity", expected, request.getEntity());
     }
 
     /**
      * Convert the request body into a String and compare it to the given String.
      *
-     * @param expected The expected request body
+     * @param expectedString The expected request body
      */
-    public RequestMatcher string(String expected) {
+    public RequestMatcher string(String expectedString) {
+        validateNotNull(expectedString, "'expectedString' must not be null.");
         return request -> {
             EntityConverter entityConverter = EntityConverter.fromRequestContext(request);
             String actual = entityConverter.convertEntity(request, String.class);
-            assertEqual("Entity String", expected, actual);
+            assertEqual("Entity String", expectedString, actual);
         };
     }
 
@@ -69,6 +75,7 @@ public final class EntityRequestMatchers {
      * @param expectedForm The expected request body
      */
     public RequestMatcher form(Form expectedForm) {
+        validateNotNull(expectedForm, "'expectedForm' must not be null.");
         return request -> {
             EntityConverter entityConverter = EntityConverter.fromRequestContext(request);
             Form form = entityConverter.convertEntity(request, Form.class);
@@ -87,6 +94,7 @@ public final class EntityRequestMatchers {
      * @param expectedForm The expected subset
      */
     public RequestMatcher formContains(Form expectedForm) {
+        validateNotNull(expectedForm, "'expectedForm' must not be null.");
         return request -> {
             EntityConverter entityConverter = EntityConverter.fromRequestContext(request);
             MultivaluedMap<String, String> expectedMap = expectedForm.asMap();
@@ -114,6 +122,7 @@ public final class EntityRequestMatchers {
      * @param expectedEntityParts The expected request entity
      */
     public RequestMatcher multipartForm(List<EntityPart> expectedEntityParts) {
+        validateNotNull(expectedEntityParts, "'expectedEntityParts' must not be null.");
         return request -> {
             EntityConverter converter = EntityConverter.fromRequestContext(request);
             List<EntityPart> expectedParts = converter.bufferExpectedMultipart(expectedEntityParts);
@@ -132,6 +141,7 @@ public final class EntityRequestMatchers {
      * @param expectedEntityParts The expected subset
      */
     public RequestMatcher multipartFormContains(List<EntityPart> expectedEntityParts) {
+        validateNotNull(expectedEntityParts, "'expectedEntityParts' must not be null.");
         return request -> {
             EntityConverter converter = EntityConverter.fromRequestContext(request);
             List<EntityPart> expectedParts = converter.bufferExpectedMultipart(expectedEntityParts);

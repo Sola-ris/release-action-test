@@ -3,29 +3,29 @@ package io.github.solaris.jaxrs.client.test.util.extension;
 import static io.github.solaris.jaxrs.client.test.util.extension.JaxRsVendor.CXF;
 import static io.github.solaris.jaxrs.client.test.util.extension.JaxRsVendor.JERSEY;
 
-import java.lang.reflect.Method;
-
 import jakarta.ws.rs.ext.RuntimeDelegate;
 
 import org.eclipse.microprofile.rest.client.spi.RestClientBuilderResolver;
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.junit.jupiter.api.extension.InvocationInterceptor;
+import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
-import org.junit.jupiter.api.extension.ReflectiveInvocationContext;
+import org.junit.jupiter.api.extension.TestInstanceFactoryContext;
+import org.junit.jupiter.api.extension.TestInstancePreConstructCallback;
+import org.junit.jupiter.api.extension.TestInstancePreDestroyCallback;
 
-import io.github.solaris.jaxrs.client.test.util.ConfiguredClientSupplier;
-import io.github.solaris.jaxrs.client.test.util.ConfiguredClientSupplier.CxfClientSupplier;
-import io.github.solaris.jaxrs.client.test.util.ConfiguredClientSupplier.DefaultClientSupplier;
 import io.github.solaris.jaxrs.client.test.util.EntityConverterAssert;
 import io.github.solaris.jaxrs.client.test.util.EntityConverterAssert.ClientEntityConverterAssert;
 import io.github.solaris.jaxrs.client.test.util.EntityConverterAssert.ProvidersEntityConverterAssert;
 import io.github.solaris.jaxrs.client.test.util.FilterExceptionAssert;
 import io.github.solaris.jaxrs.client.test.util.FilterExceptionAssert.CxfFilterExceptionAssert;
+import io.github.solaris.jaxrs.client.test.util.FilterExceptionAssert.CxfMicroProfileFilterExceptionAssert;
 import io.github.solaris.jaxrs.client.test.util.FilterExceptionAssert.DefaultFilterExceptionAssert;
 
-class JaxRsVendorTestExtension implements InvocationInterceptor, ParameterResolver {
+class JaxRsVendorTestExtension implements ParameterResolver, TestInstancePreConstructCallback, TestInstancePreDestroyCallback {
+    private static final Namespace NAMESPACE = Namespace.create(JaxRsVendorTestExtension.class);
+
     private final JaxRsVendor vendor;
 
     JaxRsVendorTestExtension(JaxRsVendor vendor) {
@@ -33,32 +33,33 @@ class JaxRsVendorTestExtension implements InvocationInterceptor, ParameterResolv
     }
 
     @Override
-    public void interceptTestTemplateMethod(
-            Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext, ExtensionContext extensionContext) throws Throwable {
+    public void preConstructTestInstance(TestInstanceFactoryContext factoryContext, ExtensionContext context) {
+        context.getStore(NAMESPACE).put(ClassLoader.class, Thread.currentThread().getContextClassLoader());
 
-        ClassLoader originalClassLoader = Thread.currentThread().getContextClassLoader();
-        try {
-            RuntimeDelegate.setInstance(null);
-            RestClientBuilderResolver.setInstance(null);
-            Thread.currentThread().setContextClassLoader(vendor.getVendorClassLoader());
+        RuntimeDelegate.setInstance(null);
+        RestClientBuilderResolver.setInstance(null);
 
-            invocation.proceed();
-        } finally {
-            Thread.currentThread().setContextClassLoader(originalClassLoader);
-        }
+        Thread.currentThread().setContextClassLoader(vendor.getVendorClassLoader());
+    }
+
+    @Override
+    public void preDestroyTestInstance(ExtensionContext context) {
+        Thread.currentThread().setContextClassLoader(context.getStore(NAMESPACE).get(ClassLoader.class, ClassLoader.class));
     }
 
     @Override
     public boolean supportsParameter(ParameterContext parameterContext, ExtensionContext extensionContext) throws ParameterResolutionException {
         return FilterExceptionAssert.class.isAssignableFrom(parameterContext.getParameter().getType())
-                || EntityConverterAssert.class.isAssignableFrom(parameterContext.getParameter().getType())
-                || ConfiguredClientSupplier.class.isAssignableFrom(parameterContext.getParameter().getType());
+                || EntityConverterAssert.class.isAssignableFrom(parameterContext.getParameter().getType());
     }
 
     @Override
     public Object resolveParameter(ParameterContext parameterContext, ExtensionContext extensionContext) throws ParameterResolutionException {
         if (FilterExceptionAssert.class.isAssignableFrom(parameterContext.getParameter().getType())) {
             if (vendor == CXF) {
+                if (extensionContext.getRequiredTestClass().getName().contains("MicroProfile")) {
+                    return new CxfMicroProfileFilterExceptionAssert();
+                }
                 return new CxfFilterExceptionAssert();
             }
             return new DefaultFilterExceptionAssert();
@@ -67,11 +68,6 @@ class JaxRsVendorTestExtension implements InvocationInterceptor, ParameterResolv
                 return new ClientEntityConverterAssert();
             }
             return new ProvidersEntityConverterAssert();
-        } else if (ConfiguredClientSupplier.class.isAssignableFrom(parameterContext.getParameter().getType())) {
-            if (vendor == CXF) {
-                return new CxfClientSupplier();
-            }
-            return new DefaultClientSupplier();
         } else {
             throw new ParameterResolutionException("Unexpected Parameter of type " + parameterContext.getParameter().getType());
         }

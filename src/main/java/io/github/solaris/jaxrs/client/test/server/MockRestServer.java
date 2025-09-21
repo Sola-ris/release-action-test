@@ -1,5 +1,7 @@
 package io.github.solaris.jaxrs.client.test.server;
 
+import static io.github.solaris.jaxrs.client.test.internal.ArgumentValidator.validateNotNull;
+
 import java.time.Duration;
 
 import jakarta.ws.rs.core.Configurable;
@@ -78,6 +80,7 @@ public final class MockRestServer {
      * @return A {@link MockRestServerBuilder} to allow for further customization of the {@code MockRestServer}
      */
     public static MockRestServerBuilder bindTo(Configurable<?> configurable) {
+        validateNotNull(configurable, "JAX-RS client component must be null.");
         return new MockRestServerBuilder(configurable);
     }
 

@@ -1,5 +1,7 @@
 package io.github.solaris.jaxrs.client.test.manager;
 
+import static io.github.solaris.jaxrs.client.test.internal.ArgumentValidator.validateNotNull;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,9 +25,11 @@ class RequestExpectation implements RequestMatcher, ResponseActions, ResponseCre
     private final List<RequestMatcher> matchers = new ArrayList<>();
     private final ExpectedCount expectedCount;
 
-    RequestExpectation(ExpectedCount expectedCount, RequestMatcher matcher) {
+    RequestExpectation(ExpectedCount expectedCount, RequestMatcher requestMatcher) {
+        validateNotNull(expectedCount, "'expectedCount' must not be null.");
+        validateNotNull(requestMatcher, "'requestMatcher' must not be null.");
         this.expectedCount = expectedCount;
-        matchers.add(matcher);
+        matchers.add(requestMatcher);
     }
 
     @Override
@@ -37,12 +41,14 @@ class RequestExpectation implements RequestMatcher, ResponseActions, ResponseCre
 
     @Override
     public ResponseActions andExpect(RequestMatcher requestMatcher) {
+        validateNotNull(requestMatcher, "'requestMatcher' must not be null.");
         matchers.add(requestMatcher);
         return this;
     }
 
     @Override
     public void andRespond(ResponseCreator responseCreator) {
+        validateNotNull(responseCreator, "'responseCreator' must not be null.");
         this.responseCreator = responseCreator;
     }
 

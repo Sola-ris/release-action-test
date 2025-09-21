@@ -6,15 +6,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 class VendorClassLoader extends ClassLoader {
     private final JaxRsVendor vendor;
-
-    private Path runtimeDelegatePath;
-    private Path clientBuilderPath;
-    private Path restClientBuilderResolverPath;
-    private Path injectionManagerFactoryPath;
+    private final Map<Class<?>, List<URL>> serviceCache = new HashMap<>(4);
 
     VendorClassLoader(JaxRsVendor vendor) {
         super(vendor.name(), VendorClassLoader.class.getClassLoader());
@@ -24,63 +22,37 @@ class VendorClassLoader extends ClassLoader {
     @Override
     public Enumeration<URL> getResources(String name) throws IOException {
         return switch (name) {
-            case "META-INF/services/jakarta.ws.rs.ext.RuntimeDelegate" -> getRuntimeDelegateService();
-            case "META-INF/services/jakarta.ws.rs.client.ClientBuilder" -> getClientBuilderService();
-            case "META-INF/services/org.eclipse.microprofile.rest.client.spi.RestClientBuilderResolver" -> getRestClientBuilderResolverService();
-            case "META-INF/services/org.glassfish.jersey.internal.inject.InjectionManagerFactory" -> getInjectionManagerFactoryService();
+            case "META-INF/services/jakarta.ws.rs.ext.RuntimeDelegate" -> getService(vendor.getRuntimeDelegateClass());
+            case "META-INF/services/jakarta.ws.rs.client.ClientBuilder" -> getService(vendor.getClientBuilderClass());
+            case "META-INF/services/org.eclipse.microprofile.rest.client.spi.RestClientBuilderResolver" ->
+                    getService(vendor.getRestClientBuilderResolverClass());
+            case "META-INF/services/org.glassfish.jersey.internal.inject.InjectionManagerFactory" ->
+                    getService(vendor.getInjectionManagerFactoryClass());
+            case "META-INF/services/org.glassfish.jersey.internal.spi.ForcedAutoDiscoverable" -> filterGson(name);
             default -> super.getResources(name);
         };
     }
 
-    private Enumeration<URL> getRuntimeDelegateService() throws IOException {
-        if (runtimeDelegatePath != null) {
-            return Collections.enumeration(List.of(runtimeDelegatePath.toUri().toURL()));
+    private Enumeration<URL> getService(Class<?> clazz) throws IOException {
+        List<URL> cached = serviceCache.get(clazz);
+        if (cached != null) {
+            return Collections.enumeration(cached);
         }
 
-        runtimeDelegatePath = Files.createTempFile(vendor.getRuntimeDelegateClass().getName(), "");
-        Files.writeString(runtimeDelegatePath, vendor.getRuntimeDelegateClass().getName() + System.lineSeparator());
+        Path servicePath = Files.createTempFile(clazz.getName(), "");
+        Files.writeString(servicePath, clazz.getName() + System.lineSeparator());
+        servicePath.toFile().deleteOnExit();
 
-        runtimeDelegatePath.toFile().deleteOnExit();
-
-        return Collections.enumeration(List.of(runtimeDelegatePath.toUri().toURL()));
+        List<URL> urls = List.of(servicePath.toUri().toURL());
+        serviceCache.put(clazz, urls);
+        return Collections.enumeration(urls);
     }
 
-    private Enumeration<URL> getClientBuilderService() throws IOException {
-        if (clientBuilderPath != null) {
-            return Collections.enumeration(List.of(clientBuilderPath.toUri().toURL()));
-        }
-
-        clientBuilderPath = Files.createTempFile(vendor.getClientBuilderClass().getName(), "");
-        Files.writeString(clientBuilderPath, vendor.getClientBuilderClass().getName() + System.lineSeparator());
-
-        clientBuilderPath.toFile().deleteOnExit();
-
-        return Collections.enumeration(List.of(clientBuilderPath.toUri().toURL()));
-    }
-
-    private Enumeration<URL> getRestClientBuilderResolverService() throws IOException {
-        if (restClientBuilderResolverPath != null) {
-            return Collections.enumeration(List.of(restClientBuilderResolverPath.toUri().toURL()));
-        }
-
-        restClientBuilderResolverPath = Files.createTempFile(vendor.getRestClientBuilderResolverClass().getName(), "");
-        Files.writeString(restClientBuilderResolverPath, vendor.getRestClientBuilderResolverClass().getName() + System.lineSeparator());
-
-        restClientBuilderResolverPath.toFile().deleteOnExit();
-
-        return Collections.enumeration(List.of(restClientBuilderResolverPath.toUri().toURL()));
-    }
-
-    private Enumeration<URL> getInjectionManagerFactoryService() throws IOException {
-        if (injectionManagerFactoryPath != null) {
-            return Collections.enumeration(List.of(injectionManagerFactoryPath.toUri().toURL()));
-        }
-
-        injectionManagerFactoryPath = Files.createTempFile(vendor.getInjectionManagerFactoryClass().getName(), "");
-        Files.writeString(injectionManagerFactoryPath, vendor.getInjectionManagerFactoryClass().getName() + System.lineSeparator());
-
-        injectionManagerFactoryPath.toFile().deleteOnExit();
-
-        return Collections.enumeration(List.of(injectionManagerFactoryPath.toUri().toURL()));
+    private Enumeration<URL> filterGson(String name) throws IOException {
+        List<URL> filtered = Collections.list(super.getResources(name))
+                .stream()
+                .filter(url -> !url.toString().contains("gson"))
+                .toList();
+        return Collections.enumeration(filtered);
     }
 }

@@ -25,13 +25,17 @@ import static java.util.Locale.ENGLISH;
 import static java.util.Locale.FRENCH;
 import static java.util.Locale.GERMAN;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.InstanceOfAssertFactories.LIST;
+import static org.junit.jupiter.params.provider.Arguments.argumentSet;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.time.Year;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
@@ -43,6 +47,11 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriBuilder;
 import jakarta.ws.rs.core.Variant;
 
+import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+
 import io.github.solaris.jaxrs.client.test.server.MockRestServer;
 import io.github.solaris.jaxrs.client.test.util.MockClientRequestContext;
 import io.github.solaris.jaxrs.client.test.util.extension.JaxRsVendorTest;
@@ -50,21 +59,21 @@ import io.github.solaris.jaxrs.client.test.util.extension.JaxRsVendorTest;
 class MockResponseCreatorTest {
 
     @JaxRsVendorTest
-    void testResponseWithStatus() {
+    void testResponseWithStatus() throws IOException {
         try (Response response = new MockResponseCreator(OK).createResponse(new MockClientRequestContext())) {
             assertThat(response.getStatusInfo().toEnum()).isEqualTo(OK);
         }
     }
 
     @JaxRsVendorTest
-    void testResponseWithMediaType() {
+    void testResponseWithMediaType() throws IOException {
         try (Response response = new MockResponseCreator(OK).mediaType(APPLICATION_JSON_TYPE).createResponse(new MockClientRequestContext())) {
             assertThat(response.getMediaType()).isEqualTo(APPLICATION_JSON_TYPE);
         }
     }
 
     @JaxRsVendorTest
-    void testResponseWithHeaders() {
+    void testResponseWithHeaders() throws IOException {
         try (Response response = new MockResponseCreator(OK)
                 .header(ACCEPT_ENCODING, "gzip", "deflate", "br")
                 .header(ACCEPT, WILDCARD)
@@ -78,14 +87,20 @@ class MockResponseCreatorTest {
 
     @JaxRsVendorTest
     void testRespondWithEntity() {
+        Client client = ClientBuilder.newClient();
+        MockRestServer server = MockRestServer.bindTo(client).build();
+
         String json = "{\"foo\": true}";
-        try (Response response = new MockResponseCreator(OK).entity(json).createResponse(new MockClientRequestContext())) {
-            assertThat(response.getEntity()).isEqualTo(json);
+
+        server.expect(anything()).andRespond(new MockResponseCreator(OK).entity(json));
+
+        try (client; Response response = client.target("").request().get()) {
+            assertThat(response.readEntity(String.class)).isEqualTo(json);
         }
     }
 
     @JaxRsVendorTest
-    void testRespondWithCookies() {
+    void testRespondWithCookies() throws IOException {
         NewCookie sessionCookie = new NewCookie.Builder("session-token")
                 .maxAge(-1)
                 .comment("top-secret")
@@ -143,7 +158,7 @@ class MockResponseCreatorTest {
     }
 
     @JaxRsVendorTest
-    void testRespondWithVariants() {
+    void testRespondWithVariants() throws IOException {
         List<Variant> variants = Variant.mediaTypes(APPLICATION_JSON_TYPE, APPLICATION_XML_TYPE)
                 .languages(ENGLISH, GERMAN, FRENCH)
                 .encodings(UTF_8.name(), UTF_16.name())
@@ -158,7 +173,7 @@ class MockResponseCreatorTest {
     // Other typed headers, URI is covered by MockResponseCreatorsTest#testCreated
 
     @JaxRsVendorTest
-    void testRespondWithCacheControl() {
+    void testRespondWithCacheControl() throws IOException {
         CacheControl cacheControl = new CacheControl();
         cacheControl.setMaxAge(42);
         cacheControl.setSMaxAge(42);
@@ -180,7 +195,7 @@ class MockResponseCreatorTest {
     }
 
     @JaxRsVendorTest
-    void testRespondWithETag() {
+    void testRespondWithETag() throws IOException {
         EntityTag entityTag = new EntityTag(UUID.randomUUID().toString().replace("-", ""), true);
 
         try (Response response = new MockResponseCreator(OK).header(ETAG, entityTag).createResponse(new MockClientRequestContext())) {
@@ -189,18 +204,44 @@ class MockResponseCreatorTest {
     }
 
     @JaxRsVendorTest
-    void testRespondWithLanguage() {
+    void testRespondWithLanguage() throws IOException {
         try (Response response = new MockResponseCreator(OK).header(CONTENT_LANGUAGE, ENGLISH).createResponse(new MockClientRequestContext())) {
             assertThat(response.getLanguage()).isEqualTo(ENGLISH);
         }
     }
 
     @JaxRsVendorTest
-    void testRespondWithLastModified() {
+    void testRespondWithLastModified() throws IOException {
         Date lastModified = new Date();
 
         try (Response response = new MockResponseCreator(OK).header(LAST_MODIFIED, lastModified).createResponse(new MockClientRequestContext())) {
             assertThat(response.getLastModified()).isEqualTo(lastModified);
         }
+    }
+
+    @ParameterizedTest
+    @MethodSource("invalidArguments")
+    void testArgumentValidation(ThrowingCallable callable, String exceptionMessage) {
+        assertThatThrownBy(callable)
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage(exceptionMessage);
+    }
+
+    @SuppressWarnings("DataFlowIssue")
+    private static Stream<Arguments> invalidArguments() {
+        return Stream.of(
+                argumentSet("testMediaType_null",
+                        (ThrowingCallable) () -> new MockResponseCreator(OK).mediaType(null), "'mediaType' must not be null."),
+                argumentSet("testHeader_name_null",
+                        (ThrowingCallable) () -> new MockResponseCreator(OK).header(null), "'name' must not be null."),
+                argumentSet("testHeader_values_null",
+                        (ThrowingCallable) () -> new MockResponseCreator(OK).header(ACCEPT, (Object[]) null), "'values' must not be null."),
+                argumentSet("testCookies_null",
+                        (ThrowingCallable) () -> new MockResponseCreator(OK).cookies((NewCookie[]) null), "'cookies' must not be null."),
+                argumentSet("testLinks_null",
+                        (ThrowingCallable) () -> new MockResponseCreator(OK).links((Link[]) null), "'links' must not be null."),
+                argumentSet("testVariants_null",
+                        (ThrowingCallable) () -> new MockResponseCreator(OK).variants((Variant[]) null), "'variants' must not be null.")
+                );
     }
 }

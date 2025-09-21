@@ -1,5 +1,6 @@
 package io.github.solaris.jaxrs.client.test.response;
 
+import static io.github.solaris.jaxrs.client.test.internal.ArgumentValidator.validateNotNull;
 import static jakarta.ws.rs.core.HttpHeaders.LOCATION;
 import static jakarta.ws.rs.core.HttpHeaders.RETRY_AFTER;
 import static jakarta.ws.rs.core.Response.Status.ACCEPTED;
@@ -25,8 +26,6 @@ import jakarta.ws.rs.core.Response.Status;
 import jakarta.ws.rs.core.Response.Status.Family;
 import jakarta.ws.rs.core.Response.StatusType;
 
-import org.jspecify.annotations.Nullable;
-
 /**
  * Factory methods for {@link ResponseCreator ResponseCreators} with a given status code.
  *
@@ -36,25 +35,26 @@ public final class MockResponseCreators {
     private MockResponseCreators() {}
 
     /**
-     * {@code ResponseCreator} for status code 200 ({@link jakarta.ws.rs.core.Response.Status#OK OK})
+     * {@code ResponseCreator} for status code 200 ({@link Status#OK OK})
      */
     public static MockResponseCreator withSuccess() {
         return new MockResponseCreator(OK);
     }
 
     /**
-     * {@code ResponseCreator} for status code 200 ({@link jakarta.ws.rs.core.Response.Status#OK OK}) and a response body.
+     * {@code ResponseCreator} for status code 200 ({@link Status#OK OK}) and a response body.
      *
      * @param entity    The response entity
-     * @param mediaType The {@code Content-Type} of the entity (possibly {@code null})
+     * @param mediaType The {@code Content-Type} of the entity
      */
-    public static MockResponseCreator withSuccess(Object entity, @Nullable MediaType mediaType) {
-        MockResponseCreator responseCreator = new MockResponseCreator(OK).entity(entity);
-        return mediaType == null ? responseCreator : responseCreator.mediaType(mediaType);
+    public static MockResponseCreator withSuccess(Object entity, MediaType mediaType) {
+        return new MockResponseCreator(OK)
+                .entity(entity)
+                .mediaType(mediaType);
     }
 
     /**
-     * {@code ResponseCreator} for status code 201 ({@link jakarta.ws.rs.core.Response.Status#CREATED CREATED}) with a {@code Location} header.
+     * {@code ResponseCreator} for status code 201 ({@link Status#CREATED CREATED}) with a {@code Location} header.
      *
      * @param location The value of the {@code Location} header
      */
@@ -63,63 +63,63 @@ public final class MockResponseCreators {
     }
 
     /**
-     * {@code ResponseCreator} for status code 202 ({@link jakarta.ws.rs.core.Response.Status#ACCEPTED ACCEPTED})
+     * {@code ResponseCreator} for status code 202 ({@link Status#ACCEPTED ACCEPTED})
      */
     public static MockResponseCreator withAccepted() {
         return new MockResponseCreator(ACCEPTED);
     }
 
     /**
-     * {@code ResponseCreator} for status code 203 ({@link jakarta.ws.rs.core.Response.Status#NO_CONTENT NO_CONTENT})
+     * {@code ResponseCreator} for status code 203 ({@link Status#NO_CONTENT NO_CONTENT})
      */
     public static MockResponseCreator withNoContent() {
         return new MockResponseCreator(NO_CONTENT);
     }
 
     /**
-     * {@code ResponseCreator} for status code 400 ({@link jakarta.ws.rs.core.Response.Status#BAD_REQUEST BAD_REQUEST})
+     * {@code ResponseCreator} for status code 400 ({@link Status#BAD_REQUEST BAD_REQUEST})
      */
     public static MockResponseCreator withBadRequest() {
         return new MockResponseCreator(BAD_REQUEST);
     }
 
     /**
-     * {@code ResponseCreator} for status code 401 ({@link jakarta.ws.rs.core.Response.Status#UNAUTHORIZED UNAUTHORIZED})
+     * {@code ResponseCreator} for status code 401 ({@link Status#UNAUTHORIZED UNAUTHORIZED})
      */
     public static MockResponseCreator withUnauthorized() {
         return new MockResponseCreator(UNAUTHORIZED);
     }
 
     /**
-     * {@code ResponseCreator} for status code 403 ({@link jakarta.ws.rs.core.Response.Status#FORBIDDEN FORBIDDEN})
+     * {@code ResponseCreator} for status code 403 ({@link Status#FORBIDDEN FORBIDDEN})
      */
     public static MockResponseCreator withForbidden() {
         return new MockResponseCreator(FORBIDDEN);
     }
 
     /**
-     * {@code ResponseCreator} for status code 404 ({@link jakarta.ws.rs.core.Response.Status#NOT_FOUND NOT_FOUND})
+     * {@code ResponseCreator} for status code 404 ({@link Status#NOT_FOUND NOT_FOUND})
      */
     public static MockResponseCreator withNotFound() {
         return new MockResponseCreator(NOT_FOUND);
     }
 
     /**
-     * {@code ResponseCreator} for status code 409 ({@link jakarta.ws.rs.core.Response.Status#CONFLICT CONFLICT})
+     * {@code ResponseCreator} for status code 409 ({@link Status#CONFLICT CONFLICT})
      */
     public static MockResponseCreator withConflict() {
         return new MockResponseCreator(CONFLICT);
     }
 
     /**
-     * {@code ResponseCreator} for status code 429 ({@link jakarta.ws.rs.core.Response.Status#TOO_MANY_REQUESTS TOO_MANY_REQUESTS})
+     * {@code ResponseCreator} for status code 429 ({@link Status#TOO_MANY_REQUESTS TOO_MANY_REQUESTS})
      */
     public static MockResponseCreator withTooManyRequests() {
         return new MockResponseCreator(TOO_MANY_REQUESTS);
     }
 
     /**
-     * {@code ResponseCreator} for status code 429 ({@link jakarta.ws.rs.core.Response.Status#TOO_MANY_REQUESTS TOO_MANY_REQUESTS})
+     * {@code ResponseCreator} for status code 429 ({@link Status#TOO_MANY_REQUESTS TOO_MANY_REQUESTS})
      * and a {@code Retry-After} header
      *
      * @param retryAfter The value of the {@code Retry-After} header in seconds
@@ -129,21 +129,21 @@ public final class MockResponseCreators {
     }
 
     /**
-     * {@code ResponseCreator} for status code 500 ({@link jakarta.ws.rs.core.Response.Status#INTERNAL_SERVER_ERROR INTERNAL_SERVER_ERROR})
+     * {@code ResponseCreator} for status code 500 ({@link Status#INTERNAL_SERVER_ERROR INTERNAL_SERVER_ERROR})
      */
     public static MockResponseCreator withInternalServerError() {
         return new MockResponseCreator(INTERNAL_SERVER_ERROR);
     }
 
     /**
-     * {@code ResponseCreator} for status code 503 ({@link jakarta.ws.rs.core.Response.Status#SERVICE_UNAVAILABLE SERVICE_UNAVAILABLE})
+     * {@code ResponseCreator} for status code 503 ({@link Status#SERVICE_UNAVAILABLE SERVICE_UNAVAILABLE})
      */
     public static MockResponseCreator withServiceUnavailable() {
         return new MockResponseCreator(SERVICE_UNAVAILABLE);
     }
 
     /**
-     * {@code ResponseCreator} for status code 504 ({@link jakarta.ws.rs.core.Response.Status#GATEWAY_TIMEOUT GATEWAY_TIMEOUT})
+     * {@code ResponseCreator} for status code 504 ({@link Status#GATEWAY_TIMEOUT GATEWAY_TIMEOUT})
      */
     public static MockResponseCreator withGatewayTimeout() {
         return new MockResponseCreator(GATEWAY_TIMEOUT);
@@ -171,6 +171,7 @@ public final class MockResponseCreators {
      * @param ioe The {@code IOException} to throw
      */
     public static ResponseCreator withException(IOException ioe) {
+        validateNotNull(ioe, "'ioe' must not be null.");
         return request -> {
             throw ioe;
         };

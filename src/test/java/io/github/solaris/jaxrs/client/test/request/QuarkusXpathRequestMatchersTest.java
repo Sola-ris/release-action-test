@@ -7,6 +7,11 @@ import io.quarkus.test.junit.QuarkusTest;
 class QuarkusXpathRequestMatchersTest extends QuarkusTestFactory {
 
     @Override
+    protected Class<?> getTestClass() {
+        return XpathRequestMatchersTest.class;
+    }
+
+    @Override
     protected Object getTestInstance() {
         return new XpathRequestMatchersTest();
     }

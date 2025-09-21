@@ -5,16 +5,24 @@ import static jakarta.ws.rs.HttpMethod.PATCH;
 import static jakarta.ws.rs.core.HttpHeaders.ACCEPT;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_XML;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.params.provider.Arguments.argumentSet;
 
 import java.net.URI;
+import java.net.URLEncoder;
 import java.util.List;
+import java.util.stream.Stream;
 
 import jakarta.ws.rs.core.MultivaluedHashMap;
 import jakarta.ws.rs.core.MultivaluedMap;
 
+import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import io.github.solaris.jaxrs.client.test.util.MockClientRequestContext;
 
@@ -71,6 +79,13 @@ class RequestMatchersTest {
     }
 
     @Test
+    void testQueryPram_testExists() {
+        URI uri = URI.create("local.host?greeting=hello");
+        assertThatCode(() -> RequestMatchers.queryParam("greeting").match(new MockClientRequestContext(uri)))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
     void testQueryParam_noValue() {
         URI uri = URI.create("local.host?greeting");
         assertThatCode(() -> RequestMatchers.queryParam("greeting", "").match(new MockClientRequestContext(uri)))
@@ -88,6 +103,38 @@ class RequestMatchersTest {
     void testQueryParam_equalsSignInValue() {
         URI uri = URI.create("local.host?greeting=hello=salutations&sendoff=farewell");
         assertThatCode(() -> RequestMatchers.queryParam("greeting", "hello=salutations").match(new MockClientRequestContext(uri)))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void testQueryParam_equalsSignInValue_encoded() {
+        String encodedEqualsSign = URLEncoder.encode("=", UTF_8);
+        URI uri = URI.create("local.host?greeting=hello" + encodedEqualsSign + "salutations&sendoff=farewell");
+        assertThatCode(() -> RequestMatchers.queryParam("greeting", "hello=salutations").match(new MockClientRequestContext(uri)))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void testQueryParam_equalsSignInName_encoded() {
+        String encodedEqualsSign = URLEncoder.encode("=", UTF_8);
+        URI uri = URI.create("local.host?gree" + encodedEqualsSign + "ting=hello&sendoff=farewell");
+        assertThatCode(() -> RequestMatchers.queryParam("gree=ting", "hello").match(new MockClientRequestContext(uri)))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void testQueryParam_ampersandInName_encoded() {
+        String ampersandEncoded = URLEncoder.encode("&", UTF_8);
+        URI uri = URI.create("local.host?gree" + ampersandEncoded + "ting=hello");
+        assertThatCode(() -> RequestMatchers.queryParam("gree&ting", "hello").match(new MockClientRequestContext(uri)))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void testQueryParam_ampersandInValue_encoded() {
+        String ampersandEncoded = URLEncoder.encode("&", UTF_8);
+        URI uri = URI.create("local.host?greeting=hel" + ampersandEncoded + "lo");
+        assertThatCode(() -> RequestMatchers.queryParam("greeting", "hel&lo").match(new MockClientRequestContext(uri)))
                 .doesNotThrowAnyException();
     }
 
@@ -176,6 +223,13 @@ class RequestMatchersTest {
     }
 
     @Test
+    void testQueryParamCount_blankQuery_encoded() {
+        URI uri = URI.create("local.host&" + URLEncoder.encode(" \t", UTF_8));
+        assertThatCode(() -> RequestMatchers.queryParamCount(0).match(new MockClientRequestContext(uri)))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
     void testQueryParamCount_repeatedQueryParam() {
         URI uri = URI.create("local.host?greeting=hello&greeting=salutations");
         assertThatCode(() -> RequestMatchers.queryParamCount(1).match(new MockClientRequestContext(uri)))
@@ -196,6 +250,15 @@ class RequestMatchersTest {
         headers.put(ACCEPT, List.of(APPLICATION_JSON, APPLICATION_XML));
 
         assertThatCode(() -> RequestMatchers.header(ACCEPT, APPLICATION_JSON, APPLICATION_XML).match(new MockClientRequestContext(headers)))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void testHeader_testExists() {
+        MultivaluedMap<String, String> headers = new MultivaluedHashMap<>();
+        headers.put(ACCEPT, List.of(APPLICATION_JSON, APPLICATION_XML));
+
+        assertThatCode(() -> RequestMatchers.header(ACCEPT).match(new MockClientRequestContext(headers)))
                 .doesNotThrowAnyException();
     }
 
@@ -249,5 +312,37 @@ class RequestMatchersTest {
         assertThatThrownBy(() -> RequestMatchers.headerDoesNotExist(ACCEPT).match(new MockClientRequestContext(headers)))
                 .isInstanceOf(AssertionError.class)
                 .hasMessage("Expected header <%s> to not exist, but it exists with values: %s", ACCEPT, headers.get(ACCEPT));
+    }
+
+    @ParameterizedTest
+    @MethodSource("invalidArguments")
+    void testArgumentValidation(ThrowingCallable callable, String exceptionMessage) {
+        assertThatThrownBy(callable)
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage(exceptionMessage);
+    }
+
+    @SuppressWarnings({"DataFlowIssue", "ResultOfMethodCallIgnored"})
+    private static Stream<Arguments> invalidArguments() {
+        return Stream.of(
+                argumentSet("testHttpMethod_null",
+                        (ThrowingCallable) () -> RequestMatchers.method(null), "'httpMethod' must not be null."),
+                argumentSet("testRequestTo_uriNull",
+                        (ThrowingCallable) () -> RequestMatchers.requestTo((String) null), "'uri' must not be null."),
+                argumentSet("testRequestTo_stringNull",
+                        (ThrowingCallable) () -> RequestMatchers.requestTo((URI) null), "'uri' must not be null."),
+                argumentSet("testQueryParam_nameNull",
+                        (ThrowingCallable) () -> RequestMatchers.queryParam(null), "'name' must not be null."),
+                argumentSet("testQueryParam_valuesNull",
+                        (ThrowingCallable) () -> RequestMatchers.queryParam("greeting", (String[]) null), "'expectedValues' must not be null."),
+                argumentSet("testQueryParamDoesNotExist_null",
+                        (ThrowingCallable) () -> RequestMatchers.queryParamDoesNotExist(null), "'name' must not be null."),
+                argumentSet("testHeader_nameNull",
+                        (ThrowingCallable) () -> RequestMatchers.header(null), "'name' must not be null."),
+                argumentSet("testHeader_valuesNull",
+                        (ThrowingCallable) () -> RequestMatchers.header(ACCEPT, (String[]) null), "'expectedValues' must not be null."),
+                argumentSet("testHeaderDoesNotExist_null",
+                        (ThrowingCallable) () -> RequestMatchers.headerDoesNotExist(null), "'name' must not be null.")
+        );
     }
 }

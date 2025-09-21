@@ -1,5 +1,7 @@
 package io.github.solaris.jaxrs.client.test.server;
 
+import static io.github.solaris.jaxrs.client.test.internal.ArgumentValidator.validateNotNull;
+
 import jakarta.ws.rs.core.Configurable;
 
 import io.github.solaris.jaxrs.client.test.manager.OrderedRequestExpectationManager;
@@ -25,6 +27,7 @@ public class MockRestServerBuilder {
      * @param order The request ordering
      */
     public MockRestServerBuilder withRequestOrder(RequestOrder order) {
+        validateNotNull(order, "'order' must not be null.");
         this.order = order;
         return this;
     }

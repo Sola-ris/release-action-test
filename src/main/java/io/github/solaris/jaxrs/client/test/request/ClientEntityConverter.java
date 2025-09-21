@@ -1,5 +1,6 @@
 package io.github.solaris.jaxrs.client.test.request;
 
+import static io.github.solaris.jaxrs.client.test.internal.ArgumentValidator.validateNotNull;
 import static io.github.solaris.jaxrs.client.test.request.MultiPartRequestContext.ENTITY_PARTS;
 
 import java.net.URI;
@@ -20,7 +21,11 @@ import io.github.solaris.jaxrs.client.test.internal.ClientCleaner;
 /**
  * Fallback {@link EntityConverter} that indirectly uses the available JAX-RS {@link jakarta.ws.rs.ext.Providers Providers}
  * through a {@link Client} to convert the entity.
- * <p>Must not be directly instantiated, use {@link EntityConverter#fromRequestContext(ClientRequestContext)}.</p>
+ *
+ * <h2>DISCLAIMER</h2>
+ *
+ * <p><strong>This class must not be directly instantiated and may change without warning!</strong></p>
+ * <p>To obtain an {@link EntityConverter}, use {@link EntityConverter#fromRequestContext(ClientRequestContext)}.</p>
  */
 public final class ClientEntityConverter extends EntityConverter {
     private static final URI LOCALHOST = URI.create("http://localhost");
@@ -31,6 +36,10 @@ public final class ClientEntityConverter extends EntityConverter {
     @Override
     @SuppressWarnings("unchecked")
     public <T> T convertEntity(ClientRequestContext requestContext, Class<T> type) {
+        validateNotNull(requestContext, "'requestContext' must not be null.");
+        validateNotNull(type, "'type' must not be null.");
+        assertEntityPresent(requestContext);
+
         if (canShortCircuit(requestContext, type, null)) {
             return (T) requestContext.getEntity();
         }
@@ -43,6 +52,10 @@ public final class ClientEntityConverter extends EntityConverter {
     @Override
     @SuppressWarnings("unchecked")
     public <T> T convertEntity(ClientRequestContext requestContext, GenericType<T> genericType) {
+        validateNotNull(requestContext, "'requestContext' must not be null.");
+        validateNotNull(genericType, "'genericType' must not be null.");
+        assertEntityPresent(requestContext);
+
         if (canShortCircuit(requestContext, genericType.getRawType(), genericType.getType())) {
             return (T) requestContext.getEntity();
         }

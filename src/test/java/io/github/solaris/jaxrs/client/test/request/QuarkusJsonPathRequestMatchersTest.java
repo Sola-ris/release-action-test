@@ -7,6 +7,11 @@ import io.quarkus.test.junit.QuarkusTest;
 class QuarkusJsonPathRequestMatchersTest extends QuarkusTestFactory {
 
     @Override
+    protected Class<?> getTestClass() {
+        return JsonPathRequestMatchersTest.class;
+    }
+
+    @Override
     protected Object getTestInstance() {
         return new JsonPathRequestMatchersTest();
     }
