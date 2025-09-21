@@ -334,6 +334,7 @@
                                     -XepOpt:NullAway:JSpecifyMode=true \
                                     -XepOpt:NullAway:OnlyNullMarked=true \
                                     -XepOpt:NullAway:CheckContracts=true \
+                                    -XepOpt:NullAway:WarnOnGenericInferenceFailure \
                                     -XepOpt:NullAway:CustomContractAnnotations=io.github.solaris.jaxrs.client.test.internal.Contract
                                 </arg>
                                 <arg>--should-stop=ifError=FLOW</arg>
@@ -342,7 +343,7 @@
                                 <path>
                                     <groupId>com.google.errorprone</groupId>
                                     <artifactId>error_prone_core</artifactId>
-                                    <version>2.41.0</version>
+                                    <version>2.42.0</version>
                                 </path>
                                 <path>
                                     <groupId>com.uber.nullaway</groupId>
