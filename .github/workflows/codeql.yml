@@ -49,7 +49,7 @@ jobs:
           queries: security-and-quality
 
       - name: Build with Maven
-        if: matrix.language == 'java-kotlin'
+        if: matrix.build-mode == 'manual'
         run: ./mvnw -e -V -B clean verify --file pom.xml -Dmaven.javadoc.skip -DskipTests -Dcyclonedx.skip -Djacoco.skip
 
       - name: Perform CodeQL Analysis
