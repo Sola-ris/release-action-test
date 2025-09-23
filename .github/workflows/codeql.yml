@@ -26,17 +26,17 @@ jobs:
           - language: actions
             build-mode: none
           - language: java-kotlin
-            build-mode: manual
+            build-mode: autobuild
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
 
-      - name: Set up JDK 25
+      - name: Set up JDK 17
         if: matrix.language == 'java-kotlin'
         uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # v5.0.0
         with:
-          java-version: "25"
+          java-version: "17"
           distribution: "temurin"
           cache: "maven"
           check-latest: true
@@ -48,9 +48,8 @@ jobs:
           build-mode: ${{ matrix.build-mode }}
           queries: security-and-quality
 
-      - name: Build with Maven
-        if: matrix.build-mode == 'manual'
-        run: ./mvnw -e -V -B clean verify --file pom.xml -Dmaven.javadoc.skip -DskipTests -Dcyclonedx.skip -Djacoco.skip
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@192325c86100d080feab897ff886c34abd4c83a3 # v3.30.3
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@192325c86100d080feab897ff886c34abd4c83a3 # v3.30.3
