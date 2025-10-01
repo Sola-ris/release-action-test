@@ -31,6 +31,5 @@ updates:
     ignore:
       - dependency-name: "jakarta.ws.rs:jakarta.ws.rs-api"
       - dependency-name: resteasy
-        versions:
-          - ">= 7"
+        update-types: ["version-update:semver-major"]
 
