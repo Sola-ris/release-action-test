@@ -48,7 +48,7 @@
 
         <version.cxf>4.1.3</version.cxf>
         <version.jersey>3.1.11</version.jersey>
-        <version.quarkus>3.28.1</version.quarkus>
+        <version.quarkus>3.28.2</version.quarkus>
         <version.resteasy>6.2.14.Final</version.resteasy>
     </properties>
 
