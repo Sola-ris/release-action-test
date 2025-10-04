@@ -14,9 +14,6 @@ updates:
         patterns:
           - "version.jersey"
           - "org.glassfish.jersey.*:*"
-        update-types:
-          - minor
-          - patch
       resteasy:
         patterns:
           - "version.resteasy"
@@ -25,11 +22,11 @@ updates:
         patterns:
           - "version.quarkus"
           - "io.quarkus:*"
-        update-types:
-          - minor
-          - patch
     ignore:
       - dependency-name: "jakarta.ws.rs:jakarta.ws.rs-api"
       - dependency-name: "org.jboss.resteasy:*"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "org.glassfish.jersey.*:*"
         update-types:
           - "version-update:semver-major"
