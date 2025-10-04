@@ -30,6 +30,5 @@ updates:
           - patch
     ignore:
       - dependency-name: "jakarta.ws.rs:jakarta.ws.rs-api"
-      - dependency-name: "org.jboss.resteasy:*"
+      - dependency-name: "version.resteasy"
         update-types: ["version-update:semver-major"]
-
