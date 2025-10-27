@@ -17,6 +17,7 @@ updates:
       resteasy:
         patterns:
           - "version.resteasy"
+          - "org.jboss.resteasy:*"
       cxf:
         patterns:
           - "version.cxf"
@@ -25,9 +26,6 @@ updates:
         patterns:
           - "version.quarkus"
           - "io.quarkus:*"
-      resteasy-jaxrs4:
-        patterns:
-          - "version.resteasy.jaxrs4"
     ignore:
       - dependency-name: "jakarta.ws.rs:jakarta.ws.rs-api"
       - dependency-name: "org.jboss.resteasy:*"

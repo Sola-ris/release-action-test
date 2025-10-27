@@ -550,9 +550,7 @@
             <id>jax-rs-4</id>
 
             <properties>
-                <version.resteasy.jaxrs4>7.0.0.Beta5</version.resteasy.jaxrs4>
-
-                <version.resteasy>${version.resteasy.jaxrs4}</version.resteasy>
+                <version.resteasy>7.0.0.Beta5</version.resteasy>
             </properties>
         </profile>
 
