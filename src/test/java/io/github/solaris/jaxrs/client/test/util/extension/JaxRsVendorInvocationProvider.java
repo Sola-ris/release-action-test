@@ -8,12 +8,14 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.NullMarked;
 import org.junit.jupiter.api.extension.Extension;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.TestTemplateInvocationContext;
 import org.junit.jupiter.api.extension.TestTemplateInvocationContextProvider;
 import org.junit.platform.commons.support.AnnotationSupport;
 
+@NullMarked
 class JaxRsVendorInvocationProvider implements TestTemplateInvocationContextProvider {
 
     @Override

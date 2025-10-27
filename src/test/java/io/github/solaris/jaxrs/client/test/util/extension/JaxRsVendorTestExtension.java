@@ -6,6 +6,7 @@ import static io.github.solaris.jaxrs.client.test.util.extension.JaxRsVendor.JER
 import jakarta.ws.rs.ext.RuntimeDelegate;
 
 import org.eclipse.microprofile.rest.client.spi.RestClientBuilderResolver;
+import org.jspecify.annotations.NullMarked;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 import org.junit.jupiter.api.extension.ParameterContext;
@@ -23,6 +24,7 @@ import io.github.solaris.jaxrs.client.test.util.FilterExceptionAssert.CxfFilterE
 import io.github.solaris.jaxrs.client.test.util.FilterExceptionAssert.CxfMicroProfileFilterExceptionAssert;
 import io.github.solaris.jaxrs.client.test.util.FilterExceptionAssert.DefaultFilterExceptionAssert;
 
+@NullMarked
 class JaxRsVendorTestExtension implements ParameterResolver, TestInstancePreConstructCallback, TestInstancePreDestroyCallback {
     private static final Namespace NAMESPACE = Namespace.create(JaxRsVendorTestExtension.class);
 

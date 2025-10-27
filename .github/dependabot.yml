@@ -18,6 +18,10 @@ updates:
         patterns:
           - "version.resteasy"
           - "org.jboss.resteasy:*"
+      cxf:
+        patterns:
+          - "version.cxf"
+          - "org.apache.cxf:*"
       quarkus:
         patterns:
           - "version.quarkus"

@@ -11,11 +11,13 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+import org.jspecify.annotations.NullMarked;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.InvocationInterceptor;
 import org.junit.jupiter.api.extension.ReflectiveInvocationContext;
 import org.junit.platform.commons.support.ReflectionSupport;
 
+@NullMarked
 class JacksonFreeClasspathExtension implements InvocationInterceptor {
     private static final List<String> EXCLUDED_JARS = List.of("resteasy", "cxf", "jackson");
     private static final String CLASS_PATH_PROPERTY = "java.class.path";
