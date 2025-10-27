@@ -51,6 +51,8 @@
         <version.jersey>3.1.11</version.jersey>
         <version.quarkus>3.29.0</version.quarkus>
         <version.resteasy>6.2.14.Final</version.resteasy>
+
+        <version.resteasy.jaxrs4>7.0.0.Beta5</version.resteasy.jaxrs4>
     </properties>
 
     <dependencyManagement>
@@ -550,7 +552,7 @@
             <id>jax-rs-4</id>
 
             <properties>
-                <version.resteasy>7.0.0.Beta5</version.resteasy>
+                <version.resteasy>${version.resteasy.jaxrs4}</version.resteasy>
             </properties>
         </profile>
 
