@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>io.github.sola-ris</groupId>
@@ -280,6 +281,19 @@
             <plugins>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-enforcer-plugin</artifactId>
+                    <version>3.6.2</version>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>enforce</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-gpg-plugin</artifactId>
                     <version>3.2.8</version>
                     <executions>
@@ -456,7 +470,8 @@
                     <consoleOutputReporter implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5ConsoleOutputReporter">
                         <usePhrasedFileName>false</usePhrasedFileName>
                     </consoleOutputReporter>
-                    <statelessTestsetInfoReporter implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5StatelessTestsetInfoReporter">
+                    <statelessTestsetInfoReporter
+                            implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5StatelessTestsetInfoReporter">
                         <usePhrasedFileName>false</usePhrasedFileName>
                         <usePhrasedClassNameInRunning>true</usePhrasedClassNameInRunning>
                         <usePhrasedClassNameInTestCaseSummary>true</usePhrasedClassNameInTestCaseSummary>
@@ -467,6 +482,18 @@
                         <usePhrasedTestSuiteClassName>true</usePhrasedTestSuiteClassName>
                         <usePhrasedTestCaseMethodName>true</usePhrasedTestCaseMethodName>
                     </statelessTestsetReporter>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <configuration>
+                    <rules>
+                        <requireJavaVersion>
+                            <version>25</version>
+                        </requireJavaVersion>
+                    </rules>
                 </configuration>
             </plugin>
 
@@ -523,20 +550,11 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-enforcer-plugin</artifactId>
-                        <version>3.6.2</version>
-                        <executions>
-                            <execution>
-                                <id>enforce-release-deps</id>
-                                <goals>
-                                    <goal>enforce</goal>
-                                </goals>
-                                <configuration>
-                                    <rules>
-                                        <requireReleaseDeps />
-                                    </rules>
-                                </configuration>
-                            </execution>
-                        </executions>
+                        <configuration>
+                            <rules>
+                                <requireReleaseDeps/>
+                            </rules>
+                        </configuration>
                     </plugin>
 
                     <plugin>

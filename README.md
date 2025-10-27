@@ -17,6 +17,7 @@ Heavily inspired by Spring's [Client testing infrastructure](https://docs.spring
     * [Request matchers](#request-matchers)
         * [Matching the request entity](#matching-the-request-entity)
         * [Matching `multipart/form-data` (`EntityPart`)](#matching-multipartform-data-entitypart)
+* [Building from source](#building-from-source)
 * [Tested implementations](#tested-implementations)
 * [Limitations](#limitations)
 
@@ -229,6 +230,12 @@ RequestMatcher myMultipartMatcher = request -> {
 // Set up the MockRestServer and execute the request
 ```
 [@formatter:on]: #
+
+## Building from source
+
+Building JAX-RS Client Test requires JDK 25.
+
+To build the project simply call `./mvnw clean install`.
 
 ## Tested implementations
 
