@@ -406,6 +406,8 @@
                         </goals>
                         <configuration>
                             <doclint>all,-missing</doclint>
+                            <failOnWarnings>true</failOnWarnings>
+                            <additionalOptions>--link-modularity-mismatch=info</additionalOptions>
                             <links>
                                 <link>https://jspecify.dev/docs/api/</link>
                                 <link>https://jakarta.ee/specifications/restful-ws/3.1/apidocs/</link>
