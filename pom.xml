@@ -344,6 +344,7 @@
                         <configuration>
                             <failOnWarning>true</failOnWarning>
                             <compilerArgs>
+                                <arg>-XDaddTypeAnnotationsToSymbol=true</arg>
                                 <arg>-Xlint:all,-requires-automatic</arg>
                                 <arg>-XDcompilePolicy=simple</arg>
                                 <arg>
@@ -362,7 +363,7 @@
                                 <path>
                                     <groupId>com.google.errorprone</groupId>
                                     <artifactId>error_prone_core</artifactId>
-                                    <version>2.42.0</version>
+                                    <version>2.43.0</version>
                                 </path>
                                 <path>
                                     <groupId>com.uber.nullaway</groupId>
