@@ -49,7 +49,7 @@
         <version.cxf>4.1.4</version.cxf>
         <version.jersey>3.1.11</version.jersey>
         <version.quarkus>3.30.1</version.quarkus>
-        <version.resteasy>6.2.14.Final</version.resteasy>
+        <version.resteasy>6.2.15.Final</version.resteasy>
 
         <version.resteasy.jaxrs4>7.0.0.Beta5</version.resteasy.jaxrs4>
     </properties>
