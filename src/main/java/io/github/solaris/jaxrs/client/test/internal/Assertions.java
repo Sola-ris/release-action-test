@@ -7,7 +7,7 @@ import org.jspecify.annotations.Nullable;
 /**
  * Simple assertions to not have a dependency on external assertion libraries.
  */
-public class Assertions {
+public final class Assertions {
     private Assertions() {}
 
     public static void assertEqual(String message, @Nullable Object expected, @Nullable Object actual) {

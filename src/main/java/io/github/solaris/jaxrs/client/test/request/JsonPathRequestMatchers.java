@@ -37,6 +37,7 @@ public final class JsonPathRequestMatchers {
 
     JsonPathRequestMatchers(String expression, Object... args) {
         validateNotBlank(expression, "JsonPath expression must not be null or blank.");
+        validateNotNull(args, "'args' must not be null.");
         this.expression = expression.formatted(args);
         this.jsonPath = JsonPath.compile(this.expression);
     }

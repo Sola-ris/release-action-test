@@ -5,10 +5,8 @@ import static io.github.solaris.jaxrs.client.test.internal.ArgumentValidator.val
 import static io.github.solaris.jaxrs.client.test.internal.Assertions.assertEqual;
 import static io.github.solaris.jaxrs.client.test.internal.Assertions.assertTrue;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.Objects.requireNonNull;
 
 import java.io.StringReader;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -46,16 +44,18 @@ public final class XpathRequestMatchers {
     private final XPathExpression xPathExpression;
     private final boolean namespaceAware;
 
-    XpathRequestMatchers(String expression, @Nullable Map<String, String> namespaces, Object... args) throws XPathExpressionException {
+    XpathRequestMatchers(String expression, Map<String, String> namespaces, Object... args) throws XPathExpressionException {
         validateNotBlank(expression, "XPath expression must not be null or blank.");
+        validateNotNull(namespaces, "'namespaces' must not be null.");
+        validateNotNull(args, "'args' must not be null.");
         this.expression = expression.formatted(args);
         this.xPathExpression = compile(this.expression, namespaces);
-        this.namespaceAware = !(namespaces == null || namespaces.isEmpty());
+        this.namespaceAware = !namespaces.isEmpty();
     }
 
-    private static XPathExpression compile(String expression, @Nullable Map<String, String> namespaces) throws XPathExpressionException {
+    private static XPathExpression compile(String expression, Map<String, String> namespaces) throws XPathExpressionException {
         SimpleNamespaceContext namespaceContext = new SimpleNamespaceContext();
-        namespaceContext.setBindings(namespaces != null ? namespaces : Collections.emptyMap());
+        namespaceContext.setBindings(namespaces);
         XPath xPath = XPathFactory.newInstance().newXPath();
         xPath.setNamespaceContext(namespaceContext);
         return xPath.compile(expression);
@@ -193,7 +193,10 @@ public final class XpathRequestMatchers {
      * <p>
      * Changes:
      *     <ul>
-     *         <li>Replaced org.springframework.util.Assert.notNull with {@link java.util.Objects#requireNonNull requireNonNull}</li>
+     *         <li>
+     *             Replaced org.springframework.util.Assert.notNull with
+     *             {@link io.github.solaris.jaxrs.client.test.internal.ArgumentValidator#validateNotNull validateNotNull}
+     *         </li>
      *         <li>Removed @Nullable from getPrefix</li>
      *         <li>
      *             Removed methods:
@@ -236,7 +239,7 @@ public final class XpathRequestMatchers {
 
         @Override
         public String getNamespaceURI(String prefix) {
-            requireNonNull(prefix, "'prefix' must not be null");
+            validateNotNull(prefix, "'prefix' must not be null.");
             if (XMLConstants.XML_NS_PREFIX.equals(prefix)) {
                 return XMLConstants.XML_NS_URI;
             } else if (XMLConstants.XMLNS_ATTRIBUTE.equals(prefix)) {
@@ -274,8 +277,8 @@ public final class XpathRequestMatchers {
          * @param namespaceUri the namespace URI
          */
         private void bindNamespaceUri(String prefix, String namespaceUri) {
-            requireNonNull(prefix, "'prefix' must not be null");
-            requireNonNull(namespaceUri, "'namespaceUri' must not be null");
+            validateNotNull(prefix, "'prefix' must not be null.");
+            validateNotNull(namespaceUri, "'namespaceUri' must not be null.");
             if (XMLConstants.DEFAULT_NS_PREFIX.equals(prefix)) {
                 this.defaultNamespaceUri = namespaceUri;
             } else {

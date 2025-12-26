@@ -54,7 +54,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import io.github.solaris.jaxrs.client.test.server.MockRestServer;
 import io.github.solaris.jaxrs.client.test.util.MockClientRequestContext;
-import io.github.solaris.jaxrs.client.test.util.extension.JaxRsVendorTest;
+import io.github.solaris.jaxrs.client.test.util.extension.vendor.JaxRsVendorTest;
 
 class MockResponseCreatorTest {
 
@@ -107,7 +107,6 @@ class MockResponseCreatorTest {
                 .value("123456")
                 .sameSite(STRICT)
                 .secure(true)
-                .version(42)
                 .build();
         NewCookie themeCookie = new NewCookie.Builder("theme")
                 // Truncated to seconds to prevent differences in millis after parsing

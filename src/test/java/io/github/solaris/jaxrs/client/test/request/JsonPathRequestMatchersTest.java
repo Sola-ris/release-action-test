@@ -18,7 +18,7 @@ import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.client.Entity;
 import jakarta.ws.rs.core.GenericType;
 
-import org.assertj.core.api.ThrowableAssert;
+import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -29,9 +29,9 @@ import com.jayway.jsonpath.JsonPathException;
 import io.github.solaris.jaxrs.client.test.server.MockRestServer;
 import io.github.solaris.jaxrs.client.test.util.Dto;
 import io.github.solaris.jaxrs.client.test.util.FilterExceptionAssert;
-import io.github.solaris.jaxrs.client.test.util.extension.JaxRsVendorTest;
-import io.github.solaris.jaxrs.client.test.util.extension.RunInQuarkus;
 import io.github.solaris.jaxrs.client.test.util.extension.classpath.JacksonFreeTest;
+import io.github.solaris.jaxrs.client.test.util.extension.vendor.JaxRsVendorTest;
+import io.github.solaris.jaxrs.client.test.util.extension.vendor.RunInQuarkus;
 
 import net.minidev.json.JSONArray;
 
@@ -453,7 +453,6 @@ class JsonPathRequestMatchersTest {
     }
 
     @JaxRsVendorTest
-    @SuppressWarnings("DataFlowIssue")
     void testsValueSatisfies_null() {
         server.expect(RequestMatchers.jsonPath(DEFINITE_PATH).valueSatisfies(value -> assertThat(value).isNull(), Dto.class))
                 .andRespond(withSuccess());
@@ -481,7 +480,7 @@ class JsonPathRequestMatchersTest {
 
     @JaxRsVendorTest
     void testsValueSatisfies_incompatibleType(FilterExceptionAssert filterExceptionAssert) {
-        server.expect(RequestMatchers.jsonPath(DEFINITE_PATH).valueSatisfies(value -> {}, Dto.class)).andRespond(withSuccess());
+        server.expect(RequestMatchers.jsonPath(DEFINITE_PATH).valueSatisfies(_ -> {}, Dto.class)).andRespond(withSuccess());
 
         Dto dto = new Dto("hello");
 
@@ -492,7 +491,7 @@ class JsonPathRequestMatchersTest {
 
     @JaxRsVendorTest
     void testsValueSatisfies_exceptionInMatcher(FilterExceptionAssert filterExceptionAssert) {
-        server.expect(RequestMatchers.jsonPath(DEFINITE_PATH).valueSatisfies(value -> throwIoException(), Dto.class))
+        server.expect(RequestMatchers.jsonPath(DEFINITE_PATH).valueSatisfies(_ -> throwIoException(), Dto.class))
                 .andRespond(withSuccess());
 
         Dto dto = new Dto(new Dto("hello"));
@@ -506,7 +505,7 @@ class JsonPathRequestMatchersTest {
 
     @JacksonFreeTest
     void testsValueSatisfies_record_jacksonUnavailable() {
-        server.expect(RequestMatchers.jsonPath(DEFINITE_PATH).valueSatisfies(value -> {}, Dto.class)).andRespond(withSuccess());
+        server.expect(RequestMatchers.jsonPath(DEFINITE_PATH).valueSatisfies(_ -> {}, Dto.class)).andRespond(withSuccess());
 
         Dto dto = new Dto(new Dto("hello"));
 
@@ -538,7 +537,6 @@ class JsonPathRequestMatchersTest {
     }
 
     @JaxRsVendorTest
-    @SuppressWarnings("DataFlowIssue")
     void testsValueSatisfies_genericType_null() {
         server.expect(RequestMatchers.jsonPath(DEFINITE_PATH).valueSatisfies(value -> assertThat(value).isNull(), new GenericType<List<Dto>>() {}))
                 .andRespond(withSuccess());
@@ -579,9 +577,9 @@ class JsonPathRequestMatchersTest {
 
     @JaxRsVendorTest
     void testsValueSatisfies_genericType_incompatibleType(FilterExceptionAssert filterExceptionAssert) {
-
         GenericType<Map<String, Dto>> type = new GenericType<>() {};
-        server.expect(RequestMatchers.jsonPath(DEFINITE_PATH).valueSatisfies(value -> {}, type))
+
+        server.expect(RequestMatchers.jsonPath(DEFINITE_PATH).valueSatisfies(_ -> {}, type))
                 .andRespond(withSuccess());
 
         Dto dto = new Dto("hello");
@@ -593,7 +591,7 @@ class JsonPathRequestMatchersTest {
 
     @JaxRsVendorTest
     void testsValueSatisfies_genericType_exceptionInMatcher(FilterExceptionAssert filterExceptionAssert) {
-        server.expect(RequestMatchers.jsonPath(DEFINITE_PATH).valueSatisfies(value -> throwIoException(), new GenericType<List<Dto>>() {}))
+        server.expect(RequestMatchers.jsonPath(DEFINITE_PATH).valueSatisfies(_ -> throwIoException(), new GenericType<List<Dto>>() {}))
                 .andRespond(withSuccess());
 
         Dto dto = new Dto(List.of(new Dto("hello"), new Dto("goodbye")));
@@ -607,7 +605,7 @@ class JsonPathRequestMatchersTest {
 
     @JacksonFreeTest
     void testsValueSatisfies_genericType_record_jacksonUnavailable() {
-        server.expect(RequestMatchers.jsonPath(DEFINITE_PATH).valueSatisfies(value -> {}, new GenericType<List<Dto>>() {}))
+        server.expect(RequestMatchers.jsonPath(DEFINITE_PATH).valueSatisfies(_ -> {}, new GenericType<List<Dto>>() {}))
                 .andRespond(withSuccess());
 
         Dto dto = new Dto(new Dto("hello"));
@@ -632,7 +630,7 @@ class JsonPathRequestMatchersTest {
 
     @ParameterizedTest
     @MethodSource("invalidArguments")
-    void testArgumentValidation(ThrowableAssert.ThrowingCallable callable, String exceptionMessage) {
+    void testArgumentValidation(ThrowingCallable callable, String exceptionMessage) {
         assertThatThrownBy(callable)
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage(exceptionMessage);
@@ -642,21 +640,23 @@ class JsonPathRequestMatchersTest {
     private static Stream<Arguments> invalidArguments() {
         return Stream.of(
                 argumentSet("testExpression_null",
-                        (ThrowableAssert.ThrowingCallable) () -> RequestMatchers.jsonPath(null), "JsonPath expression must not be null or blank."),
+                        (ThrowingCallable) () -> RequestMatchers.jsonPath(null), "JsonPath expression must not be null or blank."),
                 argumentSet("testExpression_blank",
-                        (ThrowableAssert.ThrowingCallable) () -> RequestMatchers.jsonPath(" \t\n"), "JsonPath expression must not be null or blank."),
+                        (ThrowingCallable) () -> RequestMatchers.jsonPath(" \t\n"), "JsonPath expression must not be null or blank."),
+                argumentSet("testArgs_null",
+                        (ThrowingCallable) () -> RequestMatchers.jsonPath(DEFINITE_PATH, (Object[]) null), "'args' must not be null."),
                 argumentSet("testValueSatisfies_consumerNull",
-                        (ThrowableAssert.ThrowingCallable) () -> RequestMatchers.jsonPath(DEFINITE_PATH)
+                        (ThrowingCallable) () -> RequestMatchers.jsonPath(DEFINITE_PATH)
                                 .valueSatisfies(null, String.class), "'valueAssertion' must not be null."),
                 argumentSet("testValueSatisfies_targetTypeNull",
-                        (ThrowableAssert.ThrowingCallable) () -> RequestMatchers.jsonPath(DEFINITE_PATH)
-                                .valueSatisfies(__ -> {}, (Class<?>) null), "'targetType' must not be null."),
+                        (ThrowingCallable) () -> RequestMatchers.jsonPath(DEFINITE_PATH)
+                                .valueSatisfies(_ -> {}, (Class<?>) null), "'targetType' must not be null."),
                 argumentSet("testValueSatisfies_genericType_consumerNull",
-                        (ThrowableAssert.ThrowingCallable) () -> RequestMatchers.jsonPath(DEFINITE_PATH)
+                        (ThrowingCallable) () -> RequestMatchers.jsonPath(DEFINITE_PATH)
                                 .valueSatisfies(null, new GenericType<>() {}), "'valueAssertion' must not be null."),
                 argumentSet("testValueSatisfies_genericType_targetTypeNull",
-                        (ThrowableAssert.ThrowingCallable) () -> RequestMatchers.jsonPath(DEFINITE_PATH)
-                                .valueSatisfies(__ -> {}, (GenericType<?>) null), "'targetType' must not be null.")
+                        (ThrowingCallable) () -> RequestMatchers.jsonPath(DEFINITE_PATH)
+                                .valueSatisfies(_ -> {}, (GenericType<?>) null), "'targetType' must not be null.")
         );
     }
 

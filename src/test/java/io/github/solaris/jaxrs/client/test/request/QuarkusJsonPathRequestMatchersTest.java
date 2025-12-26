@@ -1,6 +1,6 @@
 package io.github.solaris.jaxrs.client.test.request;
 
-import io.github.solaris.jaxrs.client.test.util.extension.QuarkusTestFactory;
+import io.github.solaris.jaxrs.client.test.util.extension.vendor.QuarkusTestFactory;
 import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest

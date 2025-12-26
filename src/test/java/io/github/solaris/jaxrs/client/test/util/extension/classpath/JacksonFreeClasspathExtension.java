@@ -19,16 +19,13 @@ import org.junit.platform.commons.support.ReflectionSupport;
 
 @NullMarked
 class JacksonFreeClasspathExtension implements InvocationInterceptor {
-    private static final List<String> EXCLUDED_JARS = List.of("resteasy", "cxf", "jackson");
     private static final String CLASS_PATH_PROPERTY = "java.class.path";
+    private static final List<String> EXCLUDED_JARS = List.of("resteasy", "cxf", "jackson");
 
-    @Override
-    public void interceptTestMethod(
-            Invocation<Void> invocation,
-            ReflectiveInvocationContext<Method> invocationContext,
-            ExtensionContext extensionContext
-    ) throws Throwable {
-        ClassLoader originalClassLoader = Thread.currentThread().getContextClassLoader();
+    private static final String JACKSON_FREE_CLASS_PATH;
+    private static final ClassLoader JACKSON_FREE_CLASS_LOADER;
+
+    static {
         String originalClassPathProperty = System.getProperty(CLASS_PATH_PROPERTY);
 
         String classes = Path.of("target", "classes").toAbsolutePath() + File.separator;
@@ -47,17 +44,29 @@ class JacksonFreeClasspathExtension implements InvocationInterceptor {
                     try {
                         return uri.toURL();
                     } catch (MalformedURLException e) {
-                        throw new IllegalArgumentException(e);
+                        throw new ExceptionInInitializerError(e);
                     }
                 })
                 .toArray(URL[]::new);
-        try {
-            System.setProperty(CLASS_PATH_PROPERTY, String.join(File.pathSeparator, filtered));
-            URLClassLoader jacksonFreeClassLoader = new URLClassLoader(classpath, ClassLoader.getPlatformClassLoader());
-            Thread.currentThread().setContextClassLoader(jacksonFreeClassLoader);
 
-            String testClassName = invocationContext.getExecutable().getDeclaringClass().getName();
-            Class<?> testClass = jacksonFreeClassLoader.loadClass(testClassName);
+        JACKSON_FREE_CLASS_PATH = String.join(File.pathSeparator, filtered);
+        JACKSON_FREE_CLASS_LOADER = new URLClassLoader("JacksonFree", classpath, ClassLoader.getPlatformClassLoader());
+    }
+
+    @Override
+    public void interceptTestMethod(
+            Invocation<Void> invocation,
+            ReflectiveInvocationContext<Method> invocationContext,
+            ExtensionContext extensionContext
+    ) throws Throwable {
+        ClassLoader originalClassLoader = Thread.currentThread().getContextClassLoader();
+        String originalClassPathProperty = System.getProperty(CLASS_PATH_PROPERTY);
+
+        try {
+            System.setProperty(CLASS_PATH_PROPERTY, JACKSON_FREE_CLASS_PATH);
+            Thread.currentThread().setContextClassLoader(JACKSON_FREE_CLASS_LOADER);
+
+            Class<?> testClass = JACKSON_FREE_CLASS_LOADER.loadClass(invocationContext.getExecutable().getDeclaringClass().getName());
             Optional<Method> testMethod = ReflectionSupport.findMethod(testClass, invocationContext.getExecutable().getName());
             Object testInstance = ReflectionSupport.newInstance(testClass);
 

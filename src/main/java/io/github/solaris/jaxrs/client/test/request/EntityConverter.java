@@ -66,9 +66,23 @@ public abstract sealed class EntityConverter permits ClientEntityConverter, Prov
      */
     public List<EntityPart> bufferExpectedMultipart(List<EntityPart> entityParts) throws IOException {
         validateNotNull(entityParts, "'expectedParts' must not be null.");
+
+        // Short-circuit to prevent an ArrayIndexOutOfBoundsException when using CXF
+        if (entityParts.isEmpty()) {
+            return entityParts;
+        }
+
         List<EntityPart> bufferedParts = new ArrayList<>();
-        for (EntityPart entityPart : serializeEntityParts(new MultiPartRequestContext(entityParts))) {
-            bufferedParts.add(new BufferedEntityPart(entityPart, this));
+        // CXF allows reading the EntityPart's content without serializing
+        // and throws when trying to deserialize them back so it's skipped.
+        if (entityParts.get(0).getClass().getPackageName().contains("cxf")) {
+            for (EntityPart entityPart : entityParts) {
+                bufferedParts.add(new BufferedEntityPart(entityPart, this));
+            }
+        } else {
+            for (EntityPart entityPart : serializeEntityParts(new MultiPartRequestContext(entityParts))) {
+                bufferedParts.add(new BufferedEntityPart(entityPart, this));
+            }
         }
 
         return bufferedParts;
@@ -85,20 +99,28 @@ public abstract sealed class EntityConverter permits ClientEntityConverter, Prov
      * @return The buffered request entity
      * @throws IOException If an I/O error occurs during buffering
      */
+    @SuppressWarnings("unchecked")
     public List<EntityPart> bufferMultipartRequest(ClientRequestContext requestContext) throws IOException {
         assertMultiPartEntityPresent(requestContext);
 
         List<BufferedEntityPart> bufferedParts = new ArrayList<>();
-        for (EntityPart entityPart : serializeEntityParts(requestContext)) {
-            bufferedParts.add(new BufferedEntityPart(entityPart, this));
+        // CXF allows reading the EntityPart's content without serializing
+        // and throws when trying to deserialize them back so it's skipped.
+        if (requestContext.getClass().getPackageName().contains("cxf")) {
+            for (EntityPart entityPart : ((List<EntityPart>) requestContext.getEntity())) {
+                bufferedParts.add(new BufferedEntityPart(entityPart, this));
+            }
+        } else {
+            for (EntityPart entityPart : serializeEntityParts(requestContext)) {
+                bufferedParts.add(new BufferedEntityPart(entityPart, this));
+            }
+
+            // RESTEasy will reuse the boundary parameter if it's set on the Content-Type header
+            // so it must be reset after each serialization to prevent silent parsing failures
+            requestContext.getHeaders().putSingle(CONTENT_TYPE, MULTIPART_FORM_DATA);
         }
 
-        // RESTEasy will reuse the boundary parameter if it's set on the Content-Type header
-        // so it must be reset after each serialization to prevent silent parsing failures
-        requestContext.getHeaders().putSingle(CONTENT_TYPE, MULTIPART_FORM_DATA);
-
         requestContext.setEntity(recreateEntityParts(bufferedParts));
-
         return new ArrayList<>(bufferedParts);
     }
 
@@ -138,7 +160,7 @@ public abstract sealed class EntityConverter permits ClientEntityConverter, Prov
         }
     }
 
-    static void assertMultiPartEntityPresent(ClientRequestContext requestContext) {
+    private static void assertMultiPartEntityPresent(ClientRequestContext requestContext) {
         validateNotNull(requestContext, "'requestContext' must not be null.");
         assertEntityPresent(requestContext);
         if (!MULTIPART_FORM_DATA_TYPE.equals(requestContext.getMediaType())) {
@@ -148,6 +170,7 @@ public abstract sealed class EntityConverter permits ClientEntityConverter, Prov
 
     // Jersey expects each EntityPart to be an instance of org.glassfish.jersey.media.multipart.BodyPart which BufferedEntityPart isn't,
     // so the EntityParts that replace the request entity must be recreated to prevent ClassCastExceptions during serialization.
+    // Since CXF EntityParts aren't serialized before buffering, not recreating them would result in empty Streams in subsequent reads.
     // RESTEasy doesn't care so the EntityParts are recreated for it as well.
     private static GenericEntity<List<EntityPart>> recreateEntityParts(List<BufferedEntityPart> parts) throws IOException {
         List<EntityPart> recreated = new ArrayList<>(parts.size());

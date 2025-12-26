@@ -9,6 +9,7 @@ import static io.github.solaris.jaxrs.client.test.response.MockResponseCreators.
 import static io.github.solaris.jaxrs.client.test.response.MockResponseCreators.withSuccess;
 import static io.github.solaris.jaxrs.client.test.server.RequestOrder.STRICT;
 import static io.github.solaris.jaxrs.client.test.server.RequestOrder.UNORDERED;
+import static io.github.solaris.jaxrs.client.test.util.extension.vendor.JaxRsVendor.CXF;
 import static jakarta.ws.rs.core.Response.Status.OK;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -18,6 +19,7 @@ import static org.junit.jupiter.params.provider.Arguments.argumentSet;
 import java.net.SocketException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import jakarta.ws.rs.ProcessingException;
@@ -25,8 +27,6 @@ import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.client.WebTarget;
 
-import org.assertj.core.api.Assertions;
-import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Nested;
@@ -34,45 +34,77 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import io.github.solaris.jaxrs.client.test.manager.RequestExpectationManager;
 import io.github.solaris.jaxrs.client.test.util.FilterExceptionAssert;
 import io.github.solaris.jaxrs.client.test.util.GreetingSendoffClient;
-import io.github.solaris.jaxrs.client.test.util.extension.JaxRsVendorTest;
-import io.github.solaris.jaxrs.client.test.util.extension.RunInQuarkus;
+import io.github.solaris.jaxrs.client.test.util.extension.vendor.JaxRsVendorTest;
+import io.github.solaris.jaxrs.client.test.util.extension.vendor.RunInQuarkus;
 
 class MockRestServerTest {
 
-    @ParameterizedTest
-    @MethodSource("invalidArguments")
-    void testArgumentValidation(ThrowingCallable callable, String exceptionMessage) {
-        assertThatThrownBy(callable)
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage(exceptionMessage);
-    }
+    @Nested
+    class ArgumentValidation {
 
-    @SuppressWarnings("DataFlowIssue")
-    private static Stream<Arguments> invalidArguments() {
-        return Stream.of(
-                argumentSet("testBind_null",
-                        (ThrowingCallable) () -> MockRestServer.bindTo(null), "JAX-RS client component must be null."),
-                argumentSet("testBuild_order_null",
-                        (ThrowingCallable) () -> MockRestServer.bindTo(ClientBuilder.newClient()).withRequestOrder(null),
-                        "'order' must not be null."),
-                argumentSet("testVerify_timeout_null",
-                        (ThrowingCallable) () -> MockRestServer.bindTo(ClientBuilder.newClient()).build().verify(null),
-                        "'timeout' must not be null."),
-                argumentSet("testExpect_expectedCount_null",
-                        (ThrowingCallable) () -> MockRestServer.bindTo(ClientBuilder.newClient()).build().expect(null, null),
-                        "'expectedCount' must not be null."),
-                argumentSet("testExpect_requestMatcher_null",
-                        (ThrowingCallable) () -> MockRestServer.bindTo(ClientBuilder.newClient()).build().expect(null),
-                        "'requestMatcher' must not be null."),
-                argumentSet("testExpect_secondRequestMatcher_null",
-                        (ThrowingCallable) () -> MockRestServer.bindTo(ClientBuilder.newClient()).build().expect(anything()).andExpect(null),
-                        "'requestMatcher' must not be null."),
-                argumentSet("testRespond_null",
-                        (ThrowingCallable) () -> MockRestServer.bindTo(ClientBuilder.newClient()).build().expect(anything()).andRespond(null),
-                        "'responseCreator' must not be null.")
-        );
+        @AutoClose
+        private final Client client = ClientBuilder.newClient();
+
+        @JaxRsVendorTest
+        void testRequestExpectationManagerMissing(FilterExceptionAssert filterExceptionAssert) {
+            MockRestServer server = MockRestServer.bindTo(client).build();
+            client.property(RequestExpectationManager.class.getName(), "hello");
+
+            server.expect(anything()).andRespond(withSuccess());
+
+            filterExceptionAssert.assertThatThrownBy(() -> client.target("").request().get().close())
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessage("Tried to access the RequestExpectationManager but found a " + String.class.getName() + " instead.");
+        }
+
+        @JaxRsVendorTest(skipFor = CXF)// https://issues.apache.org/jira/browse/CXF-9185
+        void testRequestExpectationManagerMissing_null(FilterExceptionAssert filterExceptionAssert) {
+            MockRestServer server = MockRestServer.bindTo(client).build();
+
+            server.expect(anything()).andRespond(withSuccess());
+            client.property(RequestExpectationManager.class.getName(), null);
+
+            filterExceptionAssert.assertThatThrownBy(() -> client.target("").request().get().close())
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessage("Tried to access the RequestExpectationManager but found null instead.");
+        }
+
+        @ParameterizedTest
+        @MethodSource("invalidArguments")
+        void testArgumentValidation(Consumer<Client> throwingCall, String exceptionMessage) {
+            assertThatThrownBy(() -> throwingCall.accept(client))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage(exceptionMessage);
+        }
+
+        @SuppressWarnings("DataFlowIssue")
+        private static Stream<Arguments> invalidArguments() {
+            return Stream.of(
+                    argumentSet("testBind_null",
+                            (Consumer<Client>) _ -> MockRestServer.bindTo(null), "JAX-RS client component must be null."),
+                    argumentSet("testBuild_order_null",
+                            (Consumer<Client>) client -> MockRestServer.bindTo(client).withRequestOrder(null),
+                            "'order' must not be null."),
+                    argumentSet("testVerify_timeout_null",
+                            (Consumer<Client>) client -> MockRestServer.bindTo(client).build().verify(null),
+                            "'timeout' must not be null."),
+                    argumentSet("testExpect_expectedCount_null",
+                            (Consumer<Client>) client -> MockRestServer.bindTo(client).build().expect(null, null),
+                            "'expectedCount' must not be null."),
+                    argumentSet("testExpect_requestMatcher_null",
+                            (Consumer<Client>) client -> MockRestServer.bindTo(client).build().expect(null),
+                            "'requestMatcher' must not be null."),
+                    argumentSet("testExpect_secondRequestMatcher_null",
+                            (Consumer<Client>) client -> MockRestServer.bindTo(client).build().expect(anything()).andExpect(null),
+                            "'requestMatcher' must not be null."),
+                    argumentSet("testRespond_null",
+                            (Consumer<Client>) client -> MockRestServer.bindTo(client).build().expect(anything()).andRespond(null),
+                            "'responseCreator' must not be null.")
+            );
+        }
     }
 
     @Nested
@@ -257,7 +289,7 @@ class MockRestServerTest {
             try (Client client = builder.build()) {
                 assertThat(client.target("/hello").request().get().getStatusInfo().toEnum()).isEqualTo(OK);
 
-                Assertions.assertThatThrownBy(server::verify)
+                assertThatThrownBy(server::verify)
                         .isInstanceOf(AssertionError.class)
                         .hasMessageMatching("""
                                 Further request\\(s\\) expected leaving 1 unsatisfied expectation\\(s\\)\\.
@@ -320,7 +352,7 @@ class MockRestServerTest {
                 assertThat(client.target("/hello").request().get().getStatusInfo().toEnum()).isEqualTo(OK);
 
                 Instant start = Instant.now();
-                Assertions.assertThatThrownBy(() -> server.verify(verifyDuration))
+                assertThatThrownBy(() -> server.verify(verifyDuration))
                         .isInstanceOf(AssertionError.class)
                         .hasMessageMatching("""
                                 Further request\\(s\\) expected leaving 1 unsatisfied expectation\\(s\\)\\.
@@ -613,7 +645,7 @@ class MockRestServerTest {
 
             assertThat(client.target("/hello").request().get().getStatusInfo().toEnum()).isEqualTo(OK);
 
-            Assertions.assertThatThrownBy(server::verify)
+            assertThatThrownBy(server::verify)
                     .isInstanceOf(AssertionError.class)
                     .hasMessageMatching("""
                             Further request\\(s\\) expected leaving 1 unsatisfied expectation\\(s\\)\\.
@@ -666,7 +698,7 @@ class MockRestServerTest {
             assertThat(client.target("/hello").request().get().getStatusInfo().toEnum()).isEqualTo(OK);
 
             Instant start = Instant.now();
-            Assertions.assertThatThrownBy(() -> server.verify(verifyDuration))
+            assertThatThrownBy(() -> server.verify(verifyDuration))
                     .isInstanceOf(AssertionError.class)
                     .hasMessageMatching("""
                             Further request\\(s\\) expected leaving 1 unsatisfied expectation\\(s\\)\\.
@@ -935,7 +967,7 @@ class MockRestServerTest {
 
             assertThat(target.path("/hello").request().get().getStatusInfo().toEnum()).isEqualTo(OK);
 
-            Assertions.assertThatThrownBy(server::verify)
+            assertThatThrownBy(server::verify)
                     .isInstanceOf(AssertionError.class)
                     .hasMessageMatching("""
                             Further request\\(s\\) expected leaving 1 unsatisfied expectation\\(s\\)\\.
@@ -989,7 +1021,7 @@ class MockRestServerTest {
             assertThat(target.path("/hello").request().get().getStatusInfo().toEnum()).isEqualTo(OK);
 
             Instant start = Instant.now();
-            Assertions.assertThatThrownBy(() -> server.verify(verifyDuration))
+            assertThatThrownBy(() -> server.verify(verifyDuration))
                     .isInstanceOf(AssertionError.class)
                     .hasMessageMatching("""
                             Further request\\(s\\) expected leaving 1 unsatisfied expectation\\(s\\)\\.
@@ -1253,7 +1285,7 @@ class MockRestServerTest {
             try (GreetingSendoffClient client = restClientBuilder.build(GreetingSendoffClient.class)) {
                 assertThat(client.greeting().getStatusInfo().toEnum()).isEqualTo(OK);
 
-                Assertions.assertThatThrownBy(server::verify)
+                assertThatThrownBy(server::verify)
                         .isInstanceOf(AssertionError.class)
                         .hasMessageMatching("""
                                 Further request\\(s\\) expected leaving 1 unsatisfied expectation\\(s\\)\\.
@@ -1315,7 +1347,7 @@ class MockRestServerTest {
                 assertThat(client.greeting().getStatusInfo().toEnum()).isEqualTo(OK);
 
                 Instant start = Instant.now();
-                Assertions.assertThatThrownBy(() -> server.verify(verifyDuration))
+                assertThatThrownBy(() -> server.verify(verifyDuration))
                         .isInstanceOf(AssertionError.class)
                         .hasMessageMatching("""
                                 Further request\\(s\\) expected leaving 1 unsatisfied expectation\\(s\\)\\.

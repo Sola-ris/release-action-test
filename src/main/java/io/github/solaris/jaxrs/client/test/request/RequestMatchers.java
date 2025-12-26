@@ -4,6 +4,7 @@ import static io.github.solaris.jaxrs.client.test.internal.ArgumentValidator.val
 import static io.github.solaris.jaxrs.client.test.internal.Assertions.assertEqual;
 import static io.github.solaris.jaxrs.client.test.internal.Assertions.assertTrue;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Collections.emptyMap;
 
 import java.net.URI;
 import java.net.URLDecoder;
@@ -189,7 +190,7 @@ public final class RequestMatchers {
      * @throws XPathExpressionException On invalid XPath expressions
      */
     public static XpathRequestMatchers xpath(String expression, Object... args) throws XPathExpressionException {
-        return new XpathRequestMatchers(expression, null, args);
+        return new XpathRequestMatchers(expression, emptyMap(), args);
     }
 
     /**

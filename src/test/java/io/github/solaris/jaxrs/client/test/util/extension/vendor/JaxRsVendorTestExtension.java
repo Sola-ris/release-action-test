@@ -1,7 +1,7 @@
-package io.github.solaris.jaxrs.client.test.util.extension;
+package io.github.solaris.jaxrs.client.test.util.extension.vendor;
 
-import static io.github.solaris.jaxrs.client.test.util.extension.JaxRsVendor.CXF;
-import static io.github.solaris.jaxrs.client.test.util.extension.JaxRsVendor.JERSEY;
+import static io.github.solaris.jaxrs.client.test.util.extension.vendor.JaxRsVendor.CXF;
+import static io.github.solaris.jaxrs.client.test.util.extension.vendor.JaxRsVendor.JERSEY;
 
 import jakarta.ws.rs.ext.RuntimeDelegate;
 

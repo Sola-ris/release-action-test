@@ -1,7 +1,7 @@
 package io.github.solaris.jaxrs.client.test.response;
 
 import static io.github.solaris.jaxrs.client.test.request.RequestMatchers.anything;
-import static io.github.solaris.jaxrs.client.test.util.extension.JaxRsVendor.CXF;
+import static io.github.solaris.jaxrs.client.test.util.extension.vendor.JaxRsVendor.CXF;
 import static jakarta.ws.rs.core.HttpHeaders.RETRY_AFTER;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON_TYPE;
 import static jakarta.ws.rs.core.Response.Status.ACCEPTED;
@@ -39,8 +39,8 @@ import org.junit.jupiter.api.Test;
 import io.github.solaris.jaxrs.client.test.server.MockRestServer;
 import io.github.solaris.jaxrs.client.test.util.Dto;
 import io.github.solaris.jaxrs.client.test.util.MockClientRequestContext;
-import io.github.solaris.jaxrs.client.test.util.extension.JaxRsVendorTest;
-import io.github.solaris.jaxrs.client.test.util.extension.RunInQuarkus;
+import io.github.solaris.jaxrs.client.test.util.extension.vendor.JaxRsVendorTest;
+import io.github.solaris.jaxrs.client.test.util.extension.vendor.RunInQuarkus;
 
 class MockResponseCreatorsTest {
 

@@ -1,6 +1,8 @@
-package io.github.solaris.jaxrs.client.test.util.extension;
+package io.github.solaris.jaxrs.client.test.util.extension.vendor;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Stream;
 
 import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.ext.RuntimeDelegate;
@@ -44,7 +46,9 @@ public enum JaxRsVendor {
             io.quarkus.rest.client.reactive.runtime.BuilderResolver.class
     );
 
-    public static final List<JaxRsVendor> VENDORS = List.of(JaxRsVendor.values());
+    static final List<JaxRsVendor> VENDORS = Stream.of(values())
+            .filter(vendor -> Arrays.asList(System.getProperty("vendors.enabled").split(",")).contains(vendor.name()))
+            .toList();
 
     private final Class<? extends RuntimeDelegate> runtimeDelegateClass;
     private final Class<? extends ClientBuilder> clientBuilderClass;

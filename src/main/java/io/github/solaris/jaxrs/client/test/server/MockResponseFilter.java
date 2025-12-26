@@ -28,8 +28,8 @@ import io.github.solaris.jaxrs.client.test.request.ProvidersEntityConverter;
  * <h2>DISCLAIMER</h2>
  *
  * <p>
- *     Not intend to for public use, but must be declared {@code public} so JAX-RS implementations can instantiate it.
- *     <strong>It may change without warning!</strong>
+ * Not intend to for public use, but must be declared {@code public} so JAX-RS implementations can instantiate it.
+ * <strong>It may change without warning!</strong>
  * </p>
  */
 public final class MockResponseFilter implements ClientRequestFilter {
@@ -52,6 +52,9 @@ public final class MockResponseFilter implements ClientRequestFilter {
             requestContext.abortWith(
                     expectationManager.validateRequest(requestContext)
             );
+        } else {
+            String foundType = property == null ? "null" : "a " + property.getClass().getName();
+            throw new IllegalStateException("Tried to access the RequestExpectationManager but found " + foundType + " instead.");
         }
     }
 

@@ -38,7 +38,7 @@ import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 
 import io.github.solaris.jaxrs.client.test.server.MockRestServer;
-import io.github.solaris.jaxrs.client.test.util.extension.JaxRsVendorTest;
+import io.github.solaris.jaxrs.client.test.util.extension.vendor.JaxRsVendorTest;
 
 @NullUnmarked
 class ExecutingResponseCreatorTest {

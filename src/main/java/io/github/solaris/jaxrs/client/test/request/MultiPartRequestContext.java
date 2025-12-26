@@ -24,7 +24,19 @@ record MultiPartRequestContext(Object entity, Type entityType, MultivaluedMap<St
     }
 
     MultiPartRequestContext(BufferedEntityPart entityPart) {
-        this(entityPart.getContent(), InputStream.class, entityPart.getHeaders());
+        this(entityPart.getContent(), InputStream.class, addContentTypeIfNecessary(entityPart));
+    }
+
+    // CXF doesn't copy the MediaType into the Content-Type header before serialization,
+    // so it has to be added manually so getMediaType doesn't throw during serialization.
+    private static MultivaluedMap<String, String> addContentTypeIfNecessary(BufferedEntityPart entityPart) {
+        if (!entityPart.getHeaders().containsKey(CONTENT_TYPE)) {
+            MultivaluedHashMap<String, String> newHeaders = new MultivaluedHashMap<>(entityPart.getHeaders());
+            newHeaders.putSingle(CONTENT_TYPE, entityPart.getMediaType().toString());
+            return newHeaders;
+        }
+
+        return entityPart.getHeaders();
     }
 
     @Override

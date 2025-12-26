@@ -1,6 +1,7 @@
-package io.github.solaris.jaxrs.client.test.util.extension;
+package io.github.solaris.jaxrs.client.test.util.extension.vendor;
 
-import static io.github.solaris.jaxrs.client.test.util.extension.JaxRsVendor.RESTEASY_REACTIVE;
+import static io.github.solaris.jaxrs.client.test.util.extension.vendor.JaxRsVendor.RESTEASY_REACTIVE;
+import static io.github.solaris.jaxrs.client.test.util.extension.vendor.JaxRsVendor.VENDORS;
 import static java.util.stream.Collectors.joining;
 import static org.junit.platform.commons.support.HierarchyTraversalMode.TOP_DOWN;
 
@@ -17,12 +18,14 @@ import org.junit.jupiter.api.DynamicNode;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
 import org.junit.platform.commons.support.ReflectionSupport;
+import org.opentest4j.TestAbortedException;
 
 import io.github.solaris.jaxrs.client.test.util.FilterExceptionAssert;
 import io.github.solaris.jaxrs.client.test.util.FilterExceptionAssert.DefaultFilterExceptionAssert;
 import io.github.solaris.jaxrs.client.test.util.extension.classpath.JacksonFreeTest;
 
 public abstract class QuarkusTestFactory {
+    private static final boolean ENABLED = VENDORS.contains(RESTEASY_REACTIVE);
 
     protected abstract Class<?> getTestClass();
 
@@ -30,6 +33,10 @@ public abstract class QuarkusTestFactory {
 
     @TestFactory
     Stream<DynamicNode> generate() {
+        if (!ENABLED) {
+            throw new TestAbortedException("Resteasy Reactive is disabled");
+        }
+
         RuntimeDelegate.setInstance(null);
         RestClientBuilderResolver.setInstance(null);
 
@@ -51,7 +58,9 @@ public abstract class QuarkusTestFactory {
             return method.getName() + "()";
         }
 
-        return method.getName() + "(" + Arrays.stream(method.getParameterTypes()).map(Class::getSimpleName).collect(joining(", ")) + ")";
+        return method.getName() + Arrays.stream(method.getParameterTypes())
+                .map(Class::getSimpleName)
+                .collect(joining(", ", "(", ")"));
     }
 
     private static Object[] getArgs(Method method) {

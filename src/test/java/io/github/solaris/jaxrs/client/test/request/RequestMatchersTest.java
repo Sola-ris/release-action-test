@@ -237,7 +237,7 @@ class RequestMatchersTest {
     }
 
     @Test
-    void testQueryParamCount_countMissmatch() {
+    void testQueryParamCount_countMismatch() {
         URI uri = URI.create("local.host?greeting=hello&sendoff=farewell");
         assertThatThrownBy(() -> RequestMatchers.queryParamCount(1).match(new MockClientRequestContext(uri)))
                 .isInstanceOf(AssertionError.class)
@@ -322,7 +322,7 @@ class RequestMatchersTest {
                 .hasMessage(exceptionMessage);
     }
 
-    @SuppressWarnings({"DataFlowIssue", "ResultOfMethodCallIgnored"})
+    @SuppressWarnings("DataFlowIssue")
     private static Stream<Arguments> invalidArguments() {
         return Stream.of(
                 argumentSet("testHttpMethod_null",

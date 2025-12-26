@@ -1,4 +1,4 @@
-package io.github.solaris.jaxrs.client.test.util.extension;
+package io.github.solaris.jaxrs.client.test.util.extension.vendor;
 
 import java.io.IOException;
 import java.net.URL;
