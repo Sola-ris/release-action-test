@@ -55,5 +55,5 @@ jobs:
             -Dsonar.projectKey=Sola-ris_release-action-test \
             -Dsonar.organization=sola-ris \
             -Dsonar.java.source=25 \
-            -Dsonar.junit.reportPaths=target/surefire-reports/TEST-*.xml \
+            -Dsonar.junit.reportPaths=target/surefire-reports \
             -Dsonar.java.jdkHome=${{ env.JAVA_HOME }}
