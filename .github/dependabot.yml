@@ -26,6 +26,11 @@ updates:
         patterns:
           - "version.quarkus"
           - "io.quarkus:*"
+      sonar:
+        patterns:
+          - "org.sonarsource.scanner.maven:sonar-maven-plugin"
+        labels:
+          - "sonar"
     ignore:
       - dependency-name: "jakarta.ws.rs:jakarta.ws.rs-api"
       - dependency-name: "org.jboss.resteasy:*"
