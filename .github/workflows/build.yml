@@ -59,4 +59,5 @@ jobs:
             -Dsonar.organization=sola-ris \
             -Dsonar.java.jdkHome=${{ env.JAVA_HOME }} \
             -Dsonar.projectKey=Sola-ris_release-action-test \
-            -Dsonar.log.level=DEBUG
+            -Dsonar.log.level=DEBUG \
+            -Dsonar.verbose=true
