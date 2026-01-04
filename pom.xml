@@ -6,7 +6,7 @@
     <artifactId>release-action-test</artifactId>
     <version>0.0.13-SNAPSHOT</version>
 
-    <name>JAX-RS Client Test</name>
+    <name>JAX-RS Client Test (Release action test)</name>
     <url>https://github.com/Sola-ris/release-action-test</url>
     <description>
         A library for testing classes that rely on a JAX-RS Client without starting a full server or relying on mocking libraries.
