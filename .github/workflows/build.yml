@@ -54,4 +54,4 @@ jobs:
           ./mvnw -B org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
             -Dsonar.projectKey=Sola-ris_release-action-test \
             -Dsonar.organization=sola-ris \
-            -Dsonar.java.jdkHome=$JAVA_HOME
+            -Dsonar.java.jdkHome="$JAVA_HOME"
