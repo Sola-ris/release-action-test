@@ -28,13 +28,6 @@ jobs:
           cache: "maven"
           check-latest: true
 
-      - name: Cache Sonar packages
-        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
-        with:
-          path: ~/.sonar/cache
-          key: ${{ runner.os }}-sonar
-          restore-keys: ${{ runner.os }}-sonar
-
       - name: Build with Maven
         run: ./mvnw -B clean verify --file pom.xml
 
@@ -49,15 +42,3 @@ jobs:
         with:
           report_type: test_results
           token: ${{ secrets.CODECOV_TOKEN }}
-
-      - name: Sonar analysis
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: |
-          ./mvnw -B org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
-            -Dsonar.java.source=25 \
-            -Dsonar.organization=sola-ris \
-            -Dsonar.java.jdkHome=${{ env.JAVA_HOME }} \
-            -Dsonar.projectKey=Sola-ris_release-action-test \
-            -Dsonar.log.level=DEBUG \
-            -Dsonar.verbose=true
