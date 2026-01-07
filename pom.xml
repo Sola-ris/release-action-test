@@ -50,7 +50,7 @@
 
         <version.cxf>4.1.4</version.cxf>
         <version.jersey>3.1.11</version.jersey>
-        <version.quarkus>3.30.5</version.quarkus>
+        <version.quarkus>3.30.6</version.quarkus>
         <version.resteasy>6.2.15.Final</version.resteasy>
 
         <version.jackson-jax-rs>2.18.5</version.jackson-jax-rs>
