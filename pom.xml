@@ -53,7 +53,7 @@
         <version.quarkus>3.30.6</version.quarkus>
         <version.resteasy>6.2.15.Final</version.resteasy>
 
-        <version.jackson-jax-rs>2.18.5</version.jackson-jax-rs>
+        <version.jackson-jax-rs>2.21.0</version.jackson-jax-rs>
 
         <vendors.enabled>JERSEY,JERSEY_HK2,RESTEASY,CXF,RESTEASY_REACTIVE</vendors.enabled>
     </properties>
