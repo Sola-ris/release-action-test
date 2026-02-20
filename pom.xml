@@ -48,7 +48,7 @@
 
         <version.jax-rs>3.1.0</version.jax-rs>
 
-        <version.cxf>4.1.4</version.cxf>
+        <version.cxf>4.1.5</version.cxf>
         <version.jersey>3.1.11</version.jersey>
         <version.quarkus>3.30.6</version.quarkus>
         <version.resteasy>6.2.15.Final</version.resteasy>
