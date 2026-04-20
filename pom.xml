@@ -48,6 +48,8 @@
 
         <version.jax-rs>3.1.0</version.jax-rs>
 
+        <version.json-path-2>2.10.0</version.json-path-2>
+
         <version.cxf>4.1.5</version.cxf>
         <version.jersey>3.1.11</version.jersey>
         <version.quarkus>3.34.5</version.quarkus>
@@ -514,7 +516,7 @@
                             <goal>copy</goal>
                         </goals>
                         <configuration>
-                            <artifact>com.jayway.jsonpath:json-path:2.10.0</artifact>
+                            <artifact>com.jayway.jsonpath:json-path:${version.json-path-2}</artifact>
                         </configuration>
                     </execution>
                 </executions>
@@ -531,7 +533,7 @@
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
                     <argLine>@{argLine} -javaagent:${org.mockito:mockito-core:jar} -Duser.language=en</argLine>
                     <systemPropertyVariables>
-                        <version.json-path-2>2.10.0</version.json-path-2>
+                        <version.json-path-2>${version.json-path-2}</version.json-path-2>
                         <vendors.enabled>${vendors.enabled}</vendors.enabled>
                         <quarkus.native.builder-image>commandline</quarkus.native.builder-image>
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
