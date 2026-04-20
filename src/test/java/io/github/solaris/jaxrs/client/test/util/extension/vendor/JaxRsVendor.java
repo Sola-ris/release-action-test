@@ -7,6 +7,7 @@ import java.util.stream.Stream;
 import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.ext.RuntimeDelegate;
 
+import org.apache.cxf.BusFactory;
 import org.apache.cxf.microprofile.client.spi.CxfRestClientBuilderResolver;
 import org.eclipse.microprofile.rest.client.spi.RestClientBuilderResolver;
 import org.glassfish.jersey.client.JerseyClientBuilder;
@@ -17,18 +18,23 @@ import org.glassfish.jersey.microprofile.restclient.JerseyRestClientBuilderResol
 import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl;
 import org.jboss.resteasy.core.providerfactory.ResteasyProviderFactoryImpl;
 
+import io.github.solaris.jaxrs.client.test.util.Jackson2BusFactory;
+import io.github.solaris.jaxrs.client.test.util.Jackson3BusFactory;
+
 public enum JaxRsVendor {
     JERSEY(
             org.glassfish.jersey.internal.RuntimeDelegateImpl.class,
             JerseyClientBuilder.class,
             JerseyRestClientBuilderResolver.class,
-            NonInjectionManagerFactory.class
+            NonInjectionManagerFactory.class,
+            null
     ),
     JERSEY_HK2(
             org.glassfish.jersey.internal.RuntimeDelegateImpl.class,
             JerseyClientBuilder.class,
             JerseyRestClientBuilderResolver.class,
-            Hk2InjectionManagerFactory.class
+            Hk2InjectionManagerFactory.class,
+            null
     ),
     RESTEASY(
             ResteasyProviderFactoryImpl.class,
@@ -38,7 +44,16 @@ public enum JaxRsVendor {
     CXF(
             org.apache.cxf.jaxrs.impl.RuntimeDelegateImpl.class,
             org.apache.cxf.jaxrs.client.spec.ClientBuilderImpl.class,
-            CxfRestClientBuilderResolver.class
+            CxfRestClientBuilderResolver.class,
+            null,
+            Jackson2BusFactory.class
+    ),
+    CXF_JACKSON3(
+            org.apache.cxf.jaxrs.impl.RuntimeDelegateImpl.class,
+            org.apache.cxf.jaxrs.client.spec.ClientBuilderImpl.class,
+            CxfRestClientBuilderResolver.class,
+            null,
+            Jackson3BusFactory.class
     ),
     RESTEASY_REACTIVE(
             org.jboss.resteasy.reactive.common.jaxrs.RuntimeDelegateImpl.class,
@@ -53,7 +68,9 @@ public enum JaxRsVendor {
     private final Class<? extends RuntimeDelegate> runtimeDelegateClass;
     private final Class<? extends ClientBuilder> clientBuilderClass;
     private final Class<? extends RestClientBuilderResolver> restClientBuilderResolverClass;
+
     private final Class<? extends InjectionManagerFactory> injectionManagerFactoryClass;
+    private final Class<? extends BusFactory> busFactoryClass;
 
     private final ClassLoader vendorClassLoader;
 
@@ -62,19 +79,21 @@ public enum JaxRsVendor {
             Class<? extends ClientBuilder> clientBuilderClass,
             Class<? extends RestClientBuilderResolver> restClientBuilderResolverClass
     ) {
-        this(runtimeDelegateClass, clientBuilderClass, restClientBuilderResolverClass, null);
+        this(runtimeDelegateClass, clientBuilderClass, restClientBuilderResolverClass, null, null);
     }
 
     JaxRsVendor(
             Class<? extends RuntimeDelegate> runtimeDelegateClass,
             Class<? extends ClientBuilder> clientBuilderClass,
             Class<? extends RestClientBuilderResolver> restClientBuilderResolverClass,
-            Class<? extends InjectionManagerFactory> injectionManagerFactoryClass
+            Class<? extends InjectionManagerFactory> injectionManagerFactoryClass,
+            Class<? extends BusFactory> busFactoryClass
     ) {
         this.runtimeDelegateClass = runtimeDelegateClass;
         this.clientBuilderClass = clientBuilderClass;
         this.restClientBuilderResolverClass = restClientBuilderResolverClass;
         this.injectionManagerFactoryClass = injectionManagerFactoryClass;
+        this.busFactoryClass = busFactoryClass;
 
         this.vendorClassLoader = new VendorClassLoader(this);
     }
@@ -95,7 +114,15 @@ public enum JaxRsVendor {
         return injectionManagerFactoryClass;
     }
 
+    Class<? extends BusFactory> getBusFactoryClass() {
+        return busFactoryClass;
+    }
+
     ClassLoader getVendorClassLoader() {
         return vendorClassLoader;
+    }
+
+    boolean isCxf() {
+        return this == CXF || this == CXF_JACKSON3;
     }
 }

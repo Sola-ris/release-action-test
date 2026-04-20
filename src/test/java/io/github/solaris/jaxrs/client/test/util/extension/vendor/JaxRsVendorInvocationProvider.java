@@ -1,5 +1,6 @@
 package io.github.solaris.jaxrs.client.test.util.extension.vendor;
 
+import static io.github.solaris.jaxrs.client.test.util.extension.vendor.JaxRsVendor.CXF_JACKSON3;
 import static io.github.solaris.jaxrs.client.test.util.extension.vendor.JaxRsVendor.RESTEASY_REACTIVE;
 import static io.github.solaris.jaxrs.client.test.util.extension.vendor.JaxRsVendor.VENDORS;
 import static java.util.Collections.singletonList;
@@ -30,7 +31,8 @@ class JaxRsVendorInvocationProvider implements TestTemplateInvocationContextProv
                 .skipFor());
         return VENDORS.stream()
                 .filter(vendor -> !skipFor.contains(vendor))
-                .filter(vendor -> !(vendor == RESTEASY_REACTIVE && AnnotationSupport.isAnnotated(context.getRequiredTestClass(), RunInQuarkus.class)))
+                .filter(vendor -> checkRunInQuarkus(context, vendor))
+                .filter(vendor -> checkJackson3(context, vendor))
                 .map(vendor -> new TestTemplateInvocationContext() {
                     @Override
                     public String getDisplayName(int invocationIndex) {
@@ -42,5 +44,20 @@ class JaxRsVendorInvocationProvider implements TestTemplateInvocationContextProv
                         return singletonList(new JaxRsVendorTestExtension(vendor));
                     }
                 });
+    }
+
+    private static boolean checkRunInQuarkus(ExtensionContext context, JaxRsVendor vendor) {
+        if (vendor != RESTEASY_REACTIVE) {
+            return true;
+        }
+        return !AnnotationSupport.isAnnotated(context.getRequiredTestClass(), RunInQuarkus.class);
+    }
+
+    private static boolean checkJackson3(ExtensionContext context, JaxRsVendor vendor) {
+        if (vendor == CXF_JACKSON3) {
+            return AnnotationSupport.isAnnotated(context.getRequiredTestClass(), EnableJackson3.class)
+                    || AnnotationSupport.isAnnotated(context.getRequiredTestMethod(), EnableJackson3.class);
+        }
+        return true;
     }
 }

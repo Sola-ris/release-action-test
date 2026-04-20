@@ -111,7 +111,7 @@ class MockResponseCreatorTest {
         NewCookie themeCookie = new NewCookie.Builder("theme")
                 // Truncated to seconds to prevent differences in millis after parsing
                 .expiry(Date.from(Instant.now().plus(Year.now().length(), DAYS).truncatedTo(SECONDS)))
-                .maxAge(Long.valueOf(YEARS.getDuration().getSeconds()).intValue())
+                .maxAge((int) YEARS.getDuration().getSeconds())
                 .secure(false)
                 .sameSite(NONE)
                 .value("dark")
@@ -121,8 +121,8 @@ class MockResponseCreatorTest {
                 .cookies(sessionCookie, themeCookie)
                 .createResponse(new MockClientRequestContext())) {
             assertThat(response.getCookies()).satisfies(
-                    cookies -> assertThat(cookies.get("session-token")).isEqualTo(sessionCookie),
-                    cookies -> assertThat(cookies.get("theme")).isEqualTo(themeCookie)
+                    cookies -> assertThat(cookies).containsEntry("session-token", sessionCookie),
+                    cookies -> assertThat(cookies).containsEntry("theme", themeCookie)
             );
         }
     }

@@ -3,22 +3,28 @@ package io.github.solaris.jaxrs.client.test.request;
 import static io.github.solaris.jaxrs.client.test.response.MockResponseCreators.withSuccess;
 import static io.github.solaris.jaxrs.client.test.util.MultiParts.LIST_CONTENT;
 import static io.github.solaris.jaxrs.client.test.util.MultiParts.PLAIN_CONTENT;
+import static io.github.solaris.jaxrs.client.test.util.MultiParts.imagePart;
 import static io.github.solaris.jaxrs.client.test.util.MultiParts.jsonPart;
 import static io.github.solaris.jaxrs.client.test.util.MultiParts.listPart;
 import static io.github.solaris.jaxrs.client.test.util.MultiParts.plainPart;
+import static io.github.solaris.jaxrs.client.test.util.MultiParts.toMultiPartEntity;
 import static io.github.solaris.jaxrs.client.test.util.extension.vendor.JaxRsVendor.JERSEY;
 import static io.github.solaris.jaxrs.client.test.util.extension.vendor.JaxRsVendor.RESTEASY_REACTIVE;
+import static jakarta.ws.rs.core.HttpHeaders.CONTENT_LENGTH;
 import static jakarta.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_FORM_URLENCODED_TYPE;
+import static jakarta.ws.rs.core.MediaType.CHARSET_PARAMETER;
 import static jakarta.ws.rs.core.MediaType.MULTIPART_FORM_DATA;
-import static jakarta.ws.rs.core.MediaType.MULTIPART_FORM_DATA_TYPE;
 import static jakarta.ws.rs.core.MediaType.TEXT_HTML_TYPE;
 import static jakarta.ws.rs.core.Response.Status.OK;
+import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
@@ -27,10 +33,13 @@ import jakarta.ws.rs.core.EntityPart;
 import jakarta.ws.rs.core.Form;
 import jakarta.ws.rs.core.GenericEntity;
 import jakarta.ws.rs.core.GenericType;
+import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.ext.RuntimeDelegate;
 
 import org.junit.jupiter.api.AutoClose;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -39,6 +48,7 @@ import io.github.solaris.jaxrs.client.test.util.Dto;
 import io.github.solaris.jaxrs.client.test.util.EntityConverterAssert;
 import io.github.solaris.jaxrs.client.test.util.FilterExceptionAssert;
 import io.github.solaris.jaxrs.client.test.util.FilterExceptionAssert.DefaultFilterExceptionAssert;
+import io.github.solaris.jaxrs.client.test.util.extension.vendor.EnableJackson3;
 import io.github.solaris.jaxrs.client.test.util.extension.vendor.JaxRsVendorTest;
 
 class EntityConverterTest {
@@ -166,21 +176,6 @@ class EntityConverterTest {
     }
 
     @JaxRsVendorTest(skipFor = {JERSEY, RESTEASY_REACTIVE})
-    void testBufferExpectedMultipart_repeatedTypedReads() {
-        server.expect(request -> {
-            EntityConverter converter = EntityConverter.fromRequestContext(request);
-            EntityPart jsonPart = converter.bufferExpectedMultipart(List.of(jsonPart())).getFirst();
-
-            assertThat(jsonPart).isInstanceOf(BufferedEntityPart.class);
-            assertThat(jsonPart.getContent(Dto.class)).isEqualTo(new Dto(false));
-            assertThat(jsonPart.getContent(Dto.class)).isEqualTo(new Dto(false));
-        }).andRespond(withSuccess());
-
-        assertThatCode(() -> client.target("/hello").request().get().close())
-                .doesNotThrowAnyException();
-    }
-
-    @JaxRsVendorTest(skipFor = {JERSEY, RESTEASY_REACTIVE})
     void testBufferExpectedMultipart_repeatedGenericReads() {
         server.expect(request -> {
             EntityConverter converter = EntityConverter.fromRequestContext(request);
@@ -209,26 +204,7 @@ class EntityConverterTest {
         assertThatCode(
                 () -> client.target("/hello")
                         .request()
-                        .post(Entity.entity(new GenericEntity<>(List.of(plainPart())) {}, MULTIPART_FORM_DATA_TYPE))
-                        .close())
-                .doesNotThrowAnyException();
-    }
-
-    @JaxRsVendorTest(skipFor = {JERSEY, RESTEASY_REACTIVE})
-    void testBufferMultipartRequest_repeatedTypedReads() {
-        server.expect(request -> {
-            EntityConverter converter = EntityConverter.fromRequestContext(request);
-            EntityPart jsonPart = converter.bufferMultipartRequest(request).getFirst();
-
-            assertThat(jsonPart).isInstanceOf(BufferedEntityPart.class);
-            assertThat(jsonPart.getContent(Dto.class)).isEqualTo(new Dto(false));
-            assertThat(jsonPart.getContent(Dto.class)).isEqualTo(new Dto(false));
-        }).andRespond(withSuccess());
-
-        assertThatCode(
-                () -> client.target("/hello")
-                        .request()
-                        .post(Entity.entity(new GenericEntity<>(List.of(jsonPart())) {}, MULTIPART_FORM_DATA_TYPE))
+                        .post(toMultiPartEntity(plainPart()))
                         .close())
                 .doesNotThrowAnyException();
     }
@@ -247,7 +223,7 @@ class EntityConverterTest {
         assertThatCode(
                 () -> client.target("/hello")
                         .request()
-                        .post(Entity.entity(new GenericEntity<>(List.of(listPart())) {}, MULTIPART_FORM_DATA_TYPE))
+                        .post(toMultiPartEntity(listPart()))
                         .close())
                 .doesNotThrowAnyException();
     }
@@ -267,7 +243,7 @@ class EntityConverterTest {
         assertThatCode(
                 () -> client.target("/hello")
                         .request()
-                        .post(Entity.entity(new GenericEntity<>(List.of(plainPart())) {}, MULTIPART_FORM_DATA_TYPE))
+                        .post(toMultiPartEntity(plainPart()))
                         .close())
                 .doesNotThrowAnyException();
     }
@@ -290,7 +266,7 @@ class EntityConverterTest {
         assertThatCode(
                 () -> client.target("/hello")
                         .request()
-                        .post(Entity.entity(new GenericEntity<>(List.of(plainPart())) {}, MULTIPART_FORM_DATA_TYPE))
+                        .post(toMultiPartEntity(plainPart()))
                         .close())
                 .doesNotThrowAnyException();
     }
@@ -307,113 +283,223 @@ class EntityConverterTest {
                 .hasMessage("MediaType must be %s", MULTIPART_FORM_DATA);
     }
 
+    @JaxRsVendorTest(skipFor = {JERSEY, RESTEASY_REACTIVE})
+    void testBufferedMultipart_nonCharsetParameterOnContentTypeRetained() throws IOException {
+        server.expect(request -> {
+            EntityConverter converter = EntityConverter.fromRequestContext(request);
+            List<EntityPart> fromRequest = converter.bufferMultipartRequest(request);
+
+            MediaType expectedMediaType = new MediaType("text", "plain", Map.of("X-Custom-Param", "hello"));
+            assertThat(fromRequest)
+                    .singleElement()
+                    .satisfies(part -> assertThat(part.getHeaders()).containsEntry(CONTENT_TYPE, List.of(expectedMediaType.toString())));
+        }).andRespond(withSuccess());
+
+        MediaType mediaType = new MediaType(
+                "text", "plain", Map.of("X-Custom-Param", "hello", CHARSET_PARAMETER, US_ASCII.displayName())
+        );
+        EntityPart entityPart = EntityPart.withName("plainWithCustomParam")
+                .content(PLAIN_CONTENT)
+                .mediaType(mediaType)
+                .header(CONTENT_TYPE, mediaType.toString()) // CXF doesn't copy the Content-Type header into the headers Map
+                .header(CONTENT_LENGTH, String.valueOf(PLAIN_CONTENT.length()))
+                .build();
+
+        assertThatCode(
+                () -> client.target("/hello")
+                        .request()
+                        .post(toMultiPartEntity(entityPart))
+                        .close())
+                .doesNotThrowAnyException();
+    }
+
+    @Nested
+    @EnableJackson3
+    class WithJson {
+
+        @AutoClose
+        private final Client jsonClient = ClientBuilder.newClient();
+
+        private final MockRestServer jsonServer = MockRestServer.bindTo(jsonClient).build();
+
+        @JaxRsVendorTest(skipFor = {JERSEY, RESTEASY_REACTIVE})
+        void testBufferExpectedMultipart_repeatedTypedReads() {
+            jsonServer.expect(request -> {
+                EntityConverter converter = EntityConverter.fromRequestContext(request);
+                EntityPart jsonPart = converter.bufferExpectedMultipart(List.of(jsonPart())).getFirst();
+
+                assertThat(jsonPart).isInstanceOf(BufferedEntityPart.class);
+                assertThat(jsonPart.getContent(Dto.class)).isEqualTo(new Dto(false));
+                assertThat(jsonPart.getContent(Dto.class)).isEqualTo(new Dto(false));
+            }).andRespond(withSuccess());
+
+            assertThatCode(() -> jsonClient.target("/hello").request().get().close())
+                    .doesNotThrowAnyException();
+        }
+
+        @JaxRsVendorTest(skipFor = {JERSEY, RESTEASY_REACTIVE})
+        void testBufferMultipartRequest_repeatedTypedReads() {
+            jsonServer.expect(request -> {
+                EntityConverter converter = EntityConverter.fromRequestContext(request);
+                EntityPart jsonPart = converter.bufferMultipartRequest(request).getFirst();
+
+                assertThat(jsonPart).isInstanceOf(BufferedEntityPart.class);
+                assertThat(jsonPart.getContent(Dto.class)).isEqualTo(new Dto(false));
+                assertThat(jsonPart.getContent(Dto.class)).isEqualTo(new Dto(false));
+            }).andRespond(withSuccess());
+
+            assertThatCode(
+                    () -> jsonClient.target("/hello")
+                            .request()
+                            .post(toMultiPartEntity(jsonPart()))
+                            .close())
+                    .doesNotThrowAnyException();
+        }
+
+        @JaxRsVendorTest(skipFor = {JERSEY, RESTEASY_REACTIVE})
+        void testBufferedMultipart_consistentHashCode() {
+            jsonServer.expect(request -> {
+                EntityConverter converter = EntityConverter.fromRequestContext(request);
+                List<EntityPart> fromRequest = converter.bufferMultipartRequest(request);
+                List<EntityPart> expectedParts = converter.bufferExpectedMultipart(List.of(jsonPart(), plainPart(), listPart(), imagePart()));
+
+                for (int i = 0; i < fromRequest.size(); i++) {
+                    assertThat(fromRequest.get(i)).hasSameHashCodeAs(expectedParts.get(i));
+                }
+            }).andRespond(withSuccess());
+
+            assertThatCode(
+                    () -> jsonClient.target("/hello")
+                            .request()
+                            .post(toMultiPartEntity(jsonPart(), plainPart(), listPart(), imagePart()))
+                            .close())
+                    .doesNotThrowAnyException();
+        }
+    }
+
     @Nested
     @SuppressWarnings("DataFlowIssue")
     class ArgumentValidation {
 
-        @AutoClose
-        private final Client validationClient = ClientBuilder.newClient();
+        private void validateArguments(Client client, FilterExceptionAssert filterExceptionAssert, RequestMatcher matcher, String exceptionMessage) {
+            MockRestServer validationServer = MockRestServer.bindTo(client).build();
 
-        @Test
-        void testFromRequestContext_converterUnobtainable() {
-            MockRestServer server = MockRestServer.bindTo(validationClient).build();
+            validationServer.expect(matcher);
 
-            server.expect(request -> {
-                request.setProperty(EntityConverter.class.getName(), "hello");
-                EntityConverter.fromRequestContext(request);
-            });
-
-            new DefaultFilterExceptionAssert().assertThatThrownBy(() -> validationClient.target("").request().get().close())
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessage("Unable to obtain EntityConverter from RequestContext.");
-        }
-
-        @Test
-        void testFromRequestContext_requestNull() {
-            RequestMatcher matcher = _ -> EntityConverter.fromRequestContext(null);
-            validateArguments(new DefaultFilterExceptionAssert(), matcher, "'requestContext' must not be null.");
-        }
-
-        @JaxRsVendorTest
-        void testConvertEntity_type_requestNull(FilterExceptionAssert filterExceptionAssert) {
-            RequestMatcher matcher = request -> {
-                EntityConverter converter = EntityConverter.fromRequestContext(request);
-                converter.convertEntity(null, String.class);
-            };
-            validateArguments(filterExceptionAssert, matcher, "'requestContext' must not be null.");
-        }
-
-        @JaxRsVendorTest
-        void testConvertEntity_type_typeNull(FilterExceptionAssert filterExceptionAssert) {
-            RequestMatcher matcher = request -> {
-                EntityConverter converter = EntityConverter.fromRequestContext(request);
-                converter.convertEntity(request, (Class<?>) null);
-            };
-            validateArguments(filterExceptionAssert, matcher, "'type' must not be null.");
-        }
-
-        @JaxRsVendorTest
-        void testConvertEntity_genericType_requestNull(FilterExceptionAssert filterExceptionAssert) {
-            RequestMatcher matcher = request -> {
-                EntityConverter converter = EntityConverter.fromRequestContext(request);
-                converter.convertEntity(null, new GenericType<>() {});
-            };
-            validateArguments(filterExceptionAssert, matcher, "'requestContext' must not be null.");
-        }
-
-        @JaxRsVendorTest
-        void testConvertEntity_genericType_genericTypeNull(FilterExceptionAssert filterExceptionAssert) {
-            RequestMatcher matcher = request -> {
-                EntityConverter converter = EntityConverter.fromRequestContext(request);
-                converter.convertEntity(request, (GenericType<?>) null);
-            };
-            validateArguments(filterExceptionAssert, matcher, "'genericType' must not be null.");
-        }
-
-        @Test
-        void testBufferExpectedMultipart_null() {
-            RequestMatcher matcher = request -> {
-                EntityConverter converter = EntityConverter.fromRequestContext(request);
-                converter.bufferExpectedMultipart(null);
-            };
-            validateArguments(new DefaultFilterExceptionAssert(), matcher, "'expectedParts' must not be null.");
-        }
-
-        @Test
-        void testBufferExpectedMultipart_empty() {
-            MockRestServer server = MockRestServer.bindTo(validationClient).build();
-            server.expect(request -> {
-                EntityConverter converter = EntityConverter.fromRequestContext(request);
-
-                List<EntityPart> parts = new ArrayList<>();
-                List<EntityPart> bufferedParts = converter.bufferExpectedMultipart(parts);
-
-                assertThat(parts)
-                        .isSameAs(bufferedParts)
-                        .isEmpty();
-            }).andRespond(withSuccess());
-
-            assertThatCode(() -> validationClient.target("").request().get().close())
-                    .doesNotThrowAnyException();
-        }
-
-        @Test
-        void testBufferMultipartRequest_null() {
-            RequestMatcher matcher = request -> {
-                EntityConverter converter = EntityConverter.fromRequestContext(request);
-                converter.bufferMultipartRequest(null);
-            };
-            validateArguments(new DefaultFilterExceptionAssert(), matcher, "'requestContext' must not be null.");
-        }
-
-        private void validateArguments(FilterExceptionAssert filterExceptionAssert, RequestMatcher matcher, String exceptionMessage) {
-            MockRestServer server = MockRestServer.bindTo(validationClient).build();
-
-            server.expect(matcher);
-
-            filterExceptionAssert.assertThatThrownBy(() -> validationClient.target("").request().get().close())
+            filterExceptionAssert.assertThatThrownBy(() -> client.target("").request().get().close())
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage(exceptionMessage);
+        }
+
+        @Nested
+        class VendorSpecific {
+
+            @AutoClose
+            private final Client validationClient = ClientBuilder.newClient();
+
+            @JaxRsVendorTest
+            void testConvertEntity_type_requestNull(FilterExceptionAssert filterExceptionAssert) {
+                RequestMatcher matcher = request -> {
+                    EntityConverter converter = EntityConverter.fromRequestContext(request);
+                    converter.convertEntity(null, String.class);
+                };
+                validateArguments(validationClient, filterExceptionAssert, matcher, "'requestContext' must not be null.");
+            }
+
+            @JaxRsVendorTest
+            void testConvertEntity_type_typeNull(FilterExceptionAssert filterExceptionAssert) {
+                RequestMatcher matcher = request -> {
+                    EntityConverter converter = EntityConverter.fromRequestContext(request);
+                    converter.convertEntity(request, (Class<?>) null);
+                };
+                validateArguments(validationClient, filterExceptionAssert, matcher, "'type' must not be null.");
+            }
+
+            @JaxRsVendorTest
+            void testConvertEntity_genericType_requestNull(FilterExceptionAssert filterExceptionAssert) {
+                RequestMatcher matcher = request -> {
+                    EntityConverter converter = EntityConverter.fromRequestContext(request);
+                    converter.convertEntity(null, new GenericType<>() {});
+                };
+                validateArguments(validationClient, filterExceptionAssert, matcher, "'requestContext' must not be null.");
+            }
+
+            @JaxRsVendorTest
+            void testConvertEntity_genericType_genericTypeNull(FilterExceptionAssert filterExceptionAssert) {
+                RequestMatcher matcher = request -> {
+                    EntityConverter converter = EntityConverter.fromRequestContext(request);
+                    converter.convertEntity(request, (GenericType<?>) null);
+                };
+                validateArguments(validationClient, filterExceptionAssert, matcher, "'genericType' must not be null.");
+            }
+        }
+
+        @Nested
+        class VendorUnspecific {
+
+            @AutoClose
+            private static final Client VALIDATION_CLIENT = ClientBuilder.newClient();
+
+            @BeforeAll
+            static void reset() {
+                RuntimeDelegate.setInstance(null);
+            }
+
+            @Test
+            void testFromRequestContext_converterUnobtainable() {
+                MockRestServer validationServer = MockRestServer.bindTo(VALIDATION_CLIENT).build();
+
+                validationServer.expect(request -> {
+                    request.setProperty(EntityConverter.class.getName(), "hello");
+                    EntityConverter.fromRequestContext(request);
+                });
+
+                new DefaultFilterExceptionAssert().assertThatThrownBy(() -> VALIDATION_CLIENT.target("").request().get().close())
+                        .isInstanceOf(IllegalStateException.class)
+                        .hasMessage("Unable to obtain EntityConverter from RequestContext.");
+            }
+
+            @Test
+            void testFromRequestContext_requestNull() {
+                RequestMatcher matcher = _ -> EntityConverter.fromRequestContext(null);
+                validateArguments(VALIDATION_CLIENT, new DefaultFilterExceptionAssert(), matcher, "'requestContext' must not be null.");
+            }
+
+            @Test
+            void testBufferExpectedMultipart_null() {
+                RequestMatcher matcher = request -> {
+                    EntityConverter converter = EntityConverter.fromRequestContext(request);
+                    converter.bufferExpectedMultipart(null);
+                };
+                validateArguments(VALIDATION_CLIENT, new DefaultFilterExceptionAssert(), matcher, "'expectedParts' must not be null.");
+            }
+
+            @Test
+            void testBufferExpectedMultipart_empty() {
+                MockRestServer validationServer = MockRestServer.bindTo(VALIDATION_CLIENT).build();
+                validationServer.expect(request -> {
+                    EntityConverter converter = EntityConverter.fromRequestContext(request);
+
+                    List<EntityPart> parts = new ArrayList<>();
+                    List<EntityPart> bufferedParts = converter.bufferExpectedMultipart(parts);
+
+                    assertThat(parts)
+                            .isSameAs(bufferedParts)
+                            .isEmpty();
+                }).andRespond(withSuccess());
+
+                assertThatCode(() -> VALIDATION_CLIENT.target("").request().get().close())
+                        .doesNotThrowAnyException();
+            }
+
+            @Test
+            void testBufferMultipartRequest_null() {
+                RequestMatcher matcher = request -> {
+                    EntityConverter converter = EntityConverter.fromRequestContext(request);
+                    converter.bufferMultipartRequest(null);
+                };
+                validateArguments(VALIDATION_CLIENT, new DefaultFilterExceptionAssert(), matcher, "'requestContext' must not be null.");
+            }
         }
     }
 }

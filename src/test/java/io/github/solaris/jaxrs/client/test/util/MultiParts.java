@@ -2,6 +2,7 @@ package io.github.solaris.jaxrs.client.test.util;
 
 import static jakarta.ws.rs.core.HttpHeaders.CONTENT_LENGTH;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON_TYPE;
+import static jakarta.ws.rs.core.MediaType.MULTIPART_FORM_DATA_TYPE;
 import static jakarta.ws.rs.core.MediaType.TEXT_PLAIN_TYPE;
 import static java.awt.Color.BLACK;
 import static java.awt.Color.WHITE;
@@ -16,12 +17,15 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.imageio.ImageIO;
 
+import jakarta.ws.rs.client.Entity;
 import jakarta.ws.rs.core.EntityPart;
+import jakarta.ws.rs.core.GenericEntity;
 import jakarta.ws.rs.core.MediaType;
 
 import io.github.solaris.jaxrs.client.test.request.EntityConverter;
@@ -84,14 +88,18 @@ public final class MultiParts {
                 .build();
     }
 
-    public static RequestMatcher partsBufferMatcher(List<EntityPart> expected, AtomicReference<PartsBuffer> target) {
+    public static RequestMatcher partsBufferMatcher(AtomicReference<PartsBuffer> target, EntityPart... expected) {
         return request -> {
             EntityConverter converter = EntityConverter.fromRequestContext(request);
             target.set(new PartsBuffer(
-                    converter.bufferExpectedMultipart(expected),
+                    converter.bufferExpectedMultipart(Arrays.asList(expected)),
                     converter.bufferMultipartRequest(request)
             ));
         };
+    }
+
+    public static Entity<GenericEntity<List<EntityPart>>> toMultiPartEntity(EntityPart... parts) {
+        return Entity.entity(new GenericEntity<>(Arrays.asList(parts)) {}, MULTIPART_FORM_DATA_TYPE);
     }
 
     public record PartsBuffer(List<EntityPart> expected, List<EntityPart> actual) {}

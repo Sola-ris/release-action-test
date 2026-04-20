@@ -1,6 +1,10 @@
 package io.github.solaris.jaxrs.client.test.request;
 
 import static io.github.solaris.jaxrs.client.test.response.MockResponseCreators.withSuccess;
+import static jakarta.ws.rs.core.HttpHeaders.CONTENT_TYPE;
+import static jakarta.ws.rs.core.MediaType.APPLICATION_XML;
+import static jakarta.ws.rs.core.Response.Status.OK;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -8,6 +12,10 @@ import static org.junit.jupiter.params.provider.Arguments.argumentSet;
 import static org.w3c.dom.Node.ELEMENT_NODE;
 import static org.w3c.dom.Node.TEXT_NODE;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,13 +33,20 @@ import jakarta.xml.bind.annotation.XmlRootElement;
 
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.jspecify.annotations.NullUnmarked;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXParseException;
+
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpServer;
 
 import io.github.solaris.jaxrs.client.test.server.MockRestServer;
 import io.github.solaris.jaxrs.client.test.util.FilterExceptionAssert;
@@ -54,6 +69,23 @@ class XpathRequestMatchersTest {
                 <greeting xml:lang='en'>hello</greeting>
                 <greeting xml:lang='de'>hallo</greeting>
             </xmlDto>""";
+
+    private static final String LOL_BOMB = """
+            <?xml version="1.0"?>
+            <!DOCTYPE lolz [
+             <!ENTITY lol "lol">
+             <!ELEMENT lolz (#PCDATA)>
+             <!ENTITY lol1 "&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;">
+             <!ENTITY lol2 "&lol1;&lol1;&lol1;&lol1;&lol1;&lol1;&lol1;&lol1;&lol1;&lol1;">
+             <!ENTITY lol3 "&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;">
+             <!ENTITY lol4 "&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;">
+             <!ENTITY lol5 "&lol4;&lol4;&lol4;&lol4;&lol4;&lol4;&lol4;&lol4;&lol4;&lol4;">
+             <!ENTITY lol6 "&lol5;&lol5;&lol5;&lol5;&lol5;&lol5;&lol5;&lol5;&lol5;&lol5;">
+             <!ENTITY lol7 "&lol6;&lol6;&lol6;&lol6;&lol6;&lol6;&lol6;&lol6;&lol6;&lol6;">
+             <!ENTITY lol8 "&lol7;&lol7;&lol7;&lol7;&lol7;&lol7;&lol7;&lol7;&lol7;&lol7;">
+             <!ENTITY lol9 "&lol8;&lol8;&lol8;&lol8;&lol8;&lol8;&lol8;&lol8;&lol8;&lol8;">
+            ]>
+            <lolz>&lol9;</lolz>""";
 
     @AutoClose
     private final Client client = ClientBuilder.newClient();
@@ -374,6 +406,35 @@ class XpathRequestMatchersTest {
                 .hasMessage("Prefix must resolve to a namespace: greeting");
     }
 
+    @JaxRsVendorTest
+    void testDoctypeDeclDisallowed(FilterExceptionAssert filterExceptionAssert) throws XPathExpressionException {
+        server.expect(RequestMatchers.xpath("/lolz").string("")).andRespond(withSuccess());
+
+        filterExceptionAssert.assertThatThrownBy(() -> client.target("").request().post(Entity.xml(LOL_BOMB)).close())
+                .isInstanceOf(AssertionError.class)
+                .cause()
+                .isInstanceOf(SAXParseException.class)
+                .hasMessageEndingWith(
+                        "DOCTYPE is disallowed when the feature \"http://apache.org/xml/features/disallow-doctype-decl\" set to true."
+                );
+    }
+
+    @JaxRsVendorTest
+    void testSecureProcessingLimits(FilterExceptionAssert filterExceptionAssert) throws XPathExpressionException {
+        String emlementName = "A".repeat(1001);
+        String elementWithNameOverLimit = "<%s>hello</%s>".formatted(emlementName, emlementName);
+
+        server.expect(RequestMatchers.xpath("/%s", emlementName).string("")).andRespond(withSuccess());
+
+        filterExceptionAssert.assertThatThrownBy(() -> client.target("").request().post(Entity.xml(elementWithNameOverLimit)).close())
+                .isInstanceOf(AssertionError.class)
+                .cause()
+                .isInstanceOf(SAXParseException.class)
+                .hasMessageEndingWith(
+                        "The length of entity \"[xml]\" is \"1,001\" that exceeds the \"1,000\" limit set by \"jaxp.properties\"."
+                );
+    }
+
     @ParameterizedTest
     @MethodSource("invalidArguments")
     void testArgumentValidation(ThrowingCallable callable, String exceptionMessage) {
@@ -416,6 +477,73 @@ class XpathRequestMatchersTest {
                     RequestMatchers.xpath("/xmlDto/str", namespaces);
                 }, "'namespaceUri' must not be null.")
         );
+    }
+
+    @Nested
+    class XInclude {
+        private static final String XINCLUDE_BODY = "hello";
+        private static final String XINCLUDE_TARGET = """
+                <xmlDto xmlns:xi="http://www.w3.org/2001/XInclude">
+                    <greeting><xi:include href='http://localhost:%s/xinclude' parse='text'/></greeting>
+                </xmlDto>
+                """;
+
+        @AutoClose
+        private final Client xIncludeClient = ClientBuilder.newClient();
+
+        private final MockRestServer xIncludeServer = MockRestServer.bindTo(xIncludeClient).build();
+
+        private int port;
+        private HttpServer httpServer;
+
+        private final XIncludeHandler handler = new XIncludeHandler();
+
+        @BeforeEach
+        void startServer() throws IOException {
+            try (ServerSocket socket = new ServerSocket(0)) {
+                port = socket.getLocalPort();
+            }
+
+            httpServer = HttpServer.create(new InetSocketAddress(port), 0);
+            httpServer.createContext("/xinclude", handler);
+            httpServer.setExecutor(null);
+            httpServer.start();
+        }
+
+        @AfterEach
+        void stopServer() {
+            httpServer.stop(0);
+        }
+
+        @JaxRsVendorTest
+        void testXIncludeNotEvaluated() throws XPathExpressionException {
+            Map<String, String> namespace = Map.of("xi", "http://www.w3.org/2001/XInclude");
+            xIncludeServer.expect(RequestMatchers.xpath("/xmlDto/greeting/xi:include", namespace).exists())
+                    .andRespond(withSuccess());
+
+            assertThatCode(() -> xIncludeClient.target("/hello")
+                    .request()
+                    .post(Entity.xml(XINCLUDE_TARGET.formatted(port)))
+                    .close())
+                    .doesNotThrowAnyException();
+            assertThat(handler.accessed).isFalse();
+        }
+
+        private static class XIncludeHandler implements HttpHandler {
+            private boolean accessed;
+
+            @Override
+            public void handle(HttpExchange exchange) throws IOException {
+                accessed = true;
+
+                exchange.getResponseHeaders().put(CONTENT_TYPE, List.of(APPLICATION_XML));
+                exchange.sendResponseHeaders(OK.getStatusCode(), XINCLUDE_BODY.length());
+
+                OutputStream outputStream = exchange.getResponseBody();
+                outputStream.write(XINCLUDE_BODY.getBytes(UTF_8));
+                outputStream.close();
+            }
+        }
     }
 
     @NullUnmarked

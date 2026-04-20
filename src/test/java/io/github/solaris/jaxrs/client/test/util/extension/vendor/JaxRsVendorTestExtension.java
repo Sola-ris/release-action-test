@@ -1,10 +1,11 @@
 package io.github.solaris.jaxrs.client.test.util.extension.vendor;
 
-import static io.github.solaris.jaxrs.client.test.util.extension.vendor.JaxRsVendor.CXF;
 import static io.github.solaris.jaxrs.client.test.util.extension.vendor.JaxRsVendor.JERSEY;
+import static org.apache.cxf.BusFactory.BUS_FACTORY_PROPERTY_NAME;
 
 import jakarta.ws.rs.ext.RuntimeDelegate;
 
+import org.apache.cxf.BusFactory;
 import org.eclipse.microprofile.rest.client.spi.RestClientBuilderResolver;
 import org.jspecify.annotations.NullMarked;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -41,12 +42,21 @@ class JaxRsVendorTestExtension implements ParameterResolver, TestInstancePreCons
         RuntimeDelegate.setInstance(null);
         RestClientBuilderResolver.setInstance(null);
 
+        if (vendor.isCxf()) {
+            BusFactory.setDefaultBus(null);
+            System.setProperty(BUS_FACTORY_PROPERTY_NAME, vendor.getBusFactoryClass().getName());
+        }
+
         Thread.currentThread().setContextClassLoader(vendor.getVendorClassLoader());
     }
 
     @Override
     public void preDestroyTestInstance(ExtensionContext context) {
         Thread.currentThread().setContextClassLoader(context.getStore(NAMESPACE).get(ClassLoader.class, ClassLoader.class));
+
+        if (vendor.isCxf()) {
+            System.clearProperty(BUS_FACTORY_PROPERTY_NAME);
+        }
     }
 
     @Override
@@ -58,7 +68,7 @@ class JaxRsVendorTestExtension implements ParameterResolver, TestInstancePreCons
     @Override
     public Object resolveParameter(ParameterContext parameterContext, ExtensionContext extensionContext) throws ParameterResolutionException {
         if (FilterExceptionAssert.class.isAssignableFrom(parameterContext.getParameter().getType())) {
-            if (vendor == CXF) {
+            if (vendor.isCxf()) {
                 if (extensionContext.getRequiredTestClass().getName().contains("MicroProfile")) {
                     return new CxfMicroProfileFilterExceptionAssert();
                 }

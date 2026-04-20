@@ -9,7 +9,7 @@ import org.apache.cxf.bus.CXFBusFactory;
 
 import com.fasterxml.jackson.jakarta.rs.json.JacksonJsonProvider;
 
-public class ConfiguredCxfBusFactory extends CXFBusFactory {
+public class Jackson2BusFactory extends CXFBusFactory {
 
     @Override
     public Bus createBus() {

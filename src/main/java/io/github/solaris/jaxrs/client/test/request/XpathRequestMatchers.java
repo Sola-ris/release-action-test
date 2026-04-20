@@ -15,7 +15,6 @@ import java.util.Set;
 
 import javax.xml.XMLConstants;
 import javax.xml.namespace.NamespaceContext;
-import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
@@ -63,16 +62,18 @@ public final class XpathRequestMatchers {
 
     @SuppressWarnings("unchecked")
     private <T extends @Nullable Object> T evaluate(ClientRequestContext requestContext, Class<T> targetType) throws Exception {
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        factory.setNamespaceAware(namespaceAware);
-        DocumentBuilder builder = factory.newDocumentBuilder();
-
         EntityConverter converter = EntityConverter.fromRequestContext(requestContext);
         String xmlString = converter.convertEntity(requestContext, String.class);
 
         InputSource inputSource = new InputSource(new StringReader(xmlString));
         inputSource.setEncoding(UTF_8.name());
-        Document document = builder.parse(inputSource);
+
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newDefaultInstance();
+        factory.setXIncludeAware(false);
+        factory.setNamespaceAware(namespaceAware);
+        factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+        factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+        Document document = factory.newDocumentBuilder().parse(inputSource);
 
         // XPathExpression::evaluateExpression only supports javax.xml.xpath.XPathNodes for NODESET
         if (NodeList.class.equals(targetType)) {

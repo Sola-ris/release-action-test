@@ -15,7 +15,7 @@ import org.junit.jupiter.api.parallel.Execution;
 @Target(METHOD)
 @Retention(RUNTIME)
 @Execution(SAME_THREAD)
-@ExtendWith(JacksonFreeClasspathExtension.class)
-public @interface JacksonFreeTest {
-    String CLASS_LOADER_NAME = "JacksonFree";
+@ExtendWith(JsonPath2ClasspathExtension.class)
+public @interface JsonPath2Test {
+    String CLASS_LOADER_NAME = "JsonPath2";
 }

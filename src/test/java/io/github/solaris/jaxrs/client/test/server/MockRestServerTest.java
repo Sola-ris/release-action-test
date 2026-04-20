@@ -9,7 +9,6 @@ import static io.github.solaris.jaxrs.client.test.response.MockResponseCreators.
 import static io.github.solaris.jaxrs.client.test.response.MockResponseCreators.withSuccess;
 import static io.github.solaris.jaxrs.client.test.server.RequestOrder.STRICT;
 import static io.github.solaris.jaxrs.client.test.server.RequestOrder.UNORDERED;
-import static io.github.solaris.jaxrs.client.test.util.extension.vendor.JaxRsVendor.CXF;
 import static jakarta.ws.rs.core.Response.Status.OK;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -60,7 +59,7 @@ class MockRestServerTest {
                     .hasMessage("Tried to access the RequestExpectationManager but found a " + String.class.getName() + " instead.");
         }
 
-        @JaxRsVendorTest(skipFor = CXF)// https://issues.apache.org/jira/browse/CXF-9185
+        @JaxRsVendorTest
         void testRequestExpectationManagerMissing_null(FilterExceptionAssert filterExceptionAssert) {
             MockRestServer server = MockRestServer.bindTo(client).build();
 
@@ -584,7 +583,7 @@ class MockRestServerTest {
 
         @JaxRsVendorTest
         void testReset_unordered(FilterExceptionAssert filterExceptionAssert) {
-            MockRestServer server = MockRestServer.bindTo(client).build();
+            MockRestServer server = MockRestServer.bindTo(client).withRequestOrder(UNORDERED).build();
 
             server.expect(max(2), requestTo("/hello")).andRespond(withSuccess());
 
@@ -611,7 +610,7 @@ class MockRestServerTest {
 
         @JaxRsVendorTest
         void testReset_strict(FilterExceptionAssert filterExceptionAssert) {
-            MockRestServer server = MockRestServer.bindTo(client).build();
+            MockRestServer server = MockRestServer.bindTo(client).withRequestOrder(STRICT).build();
 
             server.expect(max(2), requestTo("/hello")).andRespond(withSuccess());
 
@@ -904,7 +903,7 @@ class MockRestServerTest {
         @JaxRsVendorTest
         void testReset_unordered(FilterExceptionAssert filterExceptionAssert) {
             WebTarget target = client.target("");
-            MockRestServer server = MockRestServer.bindTo(target).build();
+            MockRestServer server = MockRestServer.bindTo(target).withRequestOrder(UNORDERED).build();
 
             server.expect(max(2), requestTo("/hello")).andRespond(withSuccess());
 
@@ -932,7 +931,7 @@ class MockRestServerTest {
         @JaxRsVendorTest
         void testReset_strict(FilterExceptionAssert filterExceptionAssert) {
             WebTarget target = client.target("");
-            MockRestServer server = MockRestServer.bindTo(target).build();
+            MockRestServer server = MockRestServer.bindTo(target).withRequestOrder(STRICT).build();
 
             server.expect(max(2), requestTo("/hello")).andRespond(withSuccess());
 
@@ -1219,7 +1218,7 @@ class MockRestServerTest {
 
         @JaxRsVendorTest
         void testReset_unordered(FilterExceptionAssert filterExceptionAssert) throws Exception {
-            MockRestServer server = MockRestServer.bindTo(restClientBuilder).build();
+            MockRestServer server = MockRestServer.bindTo(restClientBuilder).withRequestOrder(UNORDERED).build();
 
             server.expect(max(2), requestTo("http://localhost/hello")).andRespond(withSuccess());
 
@@ -1248,7 +1247,7 @@ class MockRestServerTest {
 
         @JaxRsVendorTest
         void testReset_strict(FilterExceptionAssert filterExceptionAssert) throws Exception {
-            MockRestServer server = MockRestServer.bindTo(restClientBuilder).build();
+            MockRestServer server = MockRestServer.bindTo(restClientBuilder).withRequestOrder(STRICT).build();
 
             server.expect(max(2), requestTo("http://localhost/hello")).andRespond(withSuccess());
 

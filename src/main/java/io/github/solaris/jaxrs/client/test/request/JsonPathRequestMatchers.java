@@ -19,6 +19,7 @@ import org.jspecify.annotations.Nullable;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.TypeRef;
+import com.jayway.jsonpath.spi.mapper.Jackson3MappingProvider;
 import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
 import com.jayway.jsonpath.spi.mapper.MappingProvider;
 
@@ -30,7 +31,10 @@ import com.jayway.jsonpath.spi.mapper.MappingProvider;
  * </p>
  */
 public final class JsonPathRequestMatchers {
-    private static final Supplier<MappingProvider> JACKSON_SUPPLIER = JacksonMappingProvider::new;
+    private static final List<Supplier<MappingProvider>> JACKSON_MAPPING_PROVIDERS = List.of(
+            JacksonMappingProvider::new,
+            Jackson3Support::getProvider
+    );
 
     private final String expression;
     private final JsonPath jsonPath;
@@ -300,11 +304,14 @@ public final class JsonPathRequestMatchers {
     }
 
     private static Configuration getJacksonConfiguration() {
-        try {
-            return Configuration.defaultConfiguration().mappingProvider(JACKSON_SUPPLIER.get());
-        } catch (Throwable e) {
-            throw new IllegalStateException("Unable to load Jackson.", e);
+        for (Supplier<MappingProvider> mappingProvider : JACKSON_MAPPING_PROVIDERS) {
+            try {
+                return Configuration.defaultConfiguration().mappingProvider(mappingProvider.get());
+            } catch (NoClassDefFoundError e) {
+                // Try the next one
+            }
         }
+        throw new IllegalStateException("Unable to load Jackson.");
     }
 
     private String createFailureMessage(String description, @Nullable Object value) {
@@ -327,6 +334,12 @@ public final class JsonPathRequestMatchers {
         @Override
         public Type getType() {
             return type;
+        }
+    }
+
+    private static final class Jackson3Support {
+        private static MappingProvider getProvider() {
+            return new Jackson3MappingProvider();
         }
     }
 }

@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Nested;
 
 import io.github.solaris.jaxrs.client.test.util.Dto;
 import io.github.solaris.jaxrs.client.test.util.GreetingSendoffClient;
+import io.github.solaris.jaxrs.client.test.util.extension.vendor.EnableJackson3;
 import io.github.solaris.jaxrs.client.test.util.extension.vendor.JaxRsVendorTest;
 import io.github.solaris.jaxrs.client.test.util.extension.vendor.RunInQuarkus;
 
@@ -66,6 +67,7 @@ class AsyncRequestTest {
                 .withMessage(EXCEPTION_MESSAGE);
     }
 
+    @EnableJackson3
     @JaxRsVendorTest
     void testInvokeAsyncWithCallback_success() {
         server.expect(method(GET)).andRespond(withSuccess(BODY, APPLICATION_JSON_TYPE));
@@ -118,26 +120,26 @@ class AsyncRequestTest {
 
         @JaxRsVendorTest
         void testInvokeMpRestClientAsync_success() throws Exception {
-            MockRestServer server = MockRestServer.bindTo(builder).build();
+            MockRestServer microprofileServer = MockRestServer.bindTo(builder).build();
 
-            server.expect(method(GET)).andExpect(requestTo("http://localhost/hello-async")).andRespond(withSuccess());
+            microprofileServer.expect(method(GET)).andExpect(requestTo("http://localhost/hello-async")).andRespond(withSuccess());
 
-            try (GreetingSendoffClient client = builder.build(GreetingSendoffClient.class)) {
-                assertThat(client.greetAsync())
+            try (GreetingSendoffClient microprofileClient = builder.build(GreetingSendoffClient.class)) {
+                assertThat(microprofileClient.greetAsync())
                         .succeedsWithin(Duration.ofSeconds(1));
             }
         }
 
         @JaxRsVendorTest
         void testInvokeMpRestClientAsync_failure() throws Exception {
-            MockRestServer server = MockRestServer.bindTo(builder).build();
+            MockRestServer microprofileServer = MockRestServer.bindTo(builder).build();
 
-            server.expect(method(GET))
+            microprofileServer.expect(method(GET))
                     .andExpect(requestTo("http://localhost/hello-async"))
                     .andRespond(withException(new SocketException(EXCEPTION_MESSAGE)));
 
-            try (GreetingSendoffClient client = builder.build(GreetingSendoffClient.class)) {
-                assertThat(client.greetAsync())
+            try (GreetingSendoffClient microprofileClient = builder.build(GreetingSendoffClient.class)) {
+                assertThat(microprofileClient.greetAsync())
                         .failsWithin(Duration.ofSeconds(1))
                         .withThrowableOfType(ExecutionException.class)
                         .havingCause()

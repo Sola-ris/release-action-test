@@ -39,6 +39,7 @@ import org.junit.jupiter.api.Test;
 import io.github.solaris.jaxrs.client.test.server.MockRestServer;
 import io.github.solaris.jaxrs.client.test.util.Dto;
 import io.github.solaris.jaxrs.client.test.util.MockClientRequestContext;
+import io.github.solaris.jaxrs.client.test.util.extension.vendor.EnableJackson3;
 import io.github.solaris.jaxrs.client.test.util.extension.vendor.JaxRsVendorTest;
 import io.github.solaris.jaxrs.client.test.util.extension.vendor.RunInQuarkus;
 
@@ -205,6 +206,7 @@ class MockResponseCreatorsTest {
 
     @Nested
     @RunInQuarkus
+    @EnableJackson3
     class WithEntity {
         private static final String JSON_STRING = "{\"something\":\"hello\"}";
 
