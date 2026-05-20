@@ -60,10 +60,11 @@ jobs:
         env:
           MAVEN_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
           MAVEN_CENTRAL_TOKEN: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
-          RELEASE_VERSION: ${{ github.event.inputs.release_version }}
         run: ./mvnw -B release:perform
 
       - name: Push tag and release commits
+        env:
+          RELEASE_VERSION: ${{ github.event.inputs.release_version }}
         run: |
           git push
           git push origin "${RELEASE_VERSION}"
