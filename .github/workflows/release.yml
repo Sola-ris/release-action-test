@@ -36,28 +36,34 @@ jobs:
           gpg-private-key: ${{ secrets.GPG_SIGNING_KEY }}
 
       - name: Set up commit signing
+        env:
+          GPG_KEY_ID: ${{ secrets.GPG_KEY_ID }}
+          RELEASE_MAIL: ${{ vars.RELEASE_MAIL }}
         run: |
           git config --global commit.gpgsign true
-          git config --global user.signingkey ${{ secrets.GPG_KEY_ID }}
+          git config --global user.signingkey "${GPG_KEY_ID}"
           git config --global user.name 'Sola-ris Releases'
-          git config --global user.email '${{ vars.RELEASE_MAIL }}'
+          git config --global user.email "${RELEASE_MAIL}"
 
       - name: Prepare Release
         env:
           MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSWORD }}
+          DEV_VERSION: ${{ github.event.inputs.dev_version }}
+          RELEASE_VERSION: ${{ github.event.inputs.release_version }}
         run: |
           ./mvnw -B release:prepare \
-            -DreleaseVersion=${{ github.event.inputs.release_version }} \
-            -DdevelopmentVersion=${{ github.event.inputs.dev_version }} \
-            -Dtag=${{ github.event.inputs.release_version }}
+            -DreleaseVersion="${RELEASE_VERSION}" \
+            -DdevelopmentVersion="${DEV_VERSION}" \
+            -Dtag="${RELEASE_VERSION}"
 
       - name: Perform Release
         env:
           MAVEN_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
           MAVEN_CENTRAL_TOKEN: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          RELEASE_VERSION: ${{ github.event.inputs.release_version }}
         run: ./mvnw -B release:perform
 
       - name: Push tag and release commits
         run: |
           git push
-          git push origin ${{ github.event.inputs.release_version }}
+          git push origin "${RELEASE_VERSION}"
