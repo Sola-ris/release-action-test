@@ -4,7 +4,7 @@
 
     <groupId>io.github.sola-ris</groupId>
     <artifactId>release-action-test</artifactId>
-    <version>0.0.14-SNAPSHOT</version>
+    <version>0.0.14</version>
 
     <name>JAX-RS Client Test (Release action test)</name>
     <url>https://github.com/Sola-ris/release-action-test</url>
@@ -28,7 +28,7 @@
     </developers>
 
     <scm>
-        <tag>HEAD</tag>
+        <tag>0.0.14</tag>
         <url>https://github.com/Sola-ris/release-action-test</url>
         <connection>scm:git:https://github.com/Sola-ris/release-action-test.git</connection>
         <developerConnection>scm:git:https://github.com/Sola-ris/release-action-test.git</developerConnection>
@@ -41,7 +41,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.build.outputTimestamp>2026-01-11T16:54:18Z</project.build.outputTimestamp>
+        <project.build.outputTimestamp>2026-05-20T16:34:39Z</project.build.outputTimestamp>
 
         <maven.deploy.skip>true</maven.deploy.skip>
         <maven.compiler.release>25</maven.compiler.release>
@@ -542,8 +542,7 @@
                     <consoleOutputReporter implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5ConsoleOutputReporter">
                         <usePhrasedFileName>false</usePhrasedFileName>
                     </consoleOutputReporter>
-                    <statelessTestsetInfoReporter
-                            implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5StatelessTestsetInfoReporter">
+                    <statelessTestsetInfoReporter implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5StatelessTestsetInfoReporter">
                         <usePhrasedFileName>false</usePhrasedFileName>
                         <usePhrasedClassNameInRunning>true</usePhrasedClassNameInRunning>
                         <usePhrasedClassNameInTestCaseSummary>true</usePhrasedClassNameInTestCaseSummary>
