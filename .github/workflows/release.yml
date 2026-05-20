@@ -15,6 +15,7 @@ permissions: {}
 
 jobs:
   release:
+    name: Release JAX-RS Client Test
     runs-on: ubuntu-latest
 
     permissions:
