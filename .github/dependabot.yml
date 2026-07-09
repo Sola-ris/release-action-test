@@ -4,6 +4,11 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    groups:
+      qodeql:
+        patterns:
+          - "github/codeql-action*"
+
   - package-ecosystem: maven
     directory: /
     open-pull-requests-limit: 10
@@ -26,9 +31,6 @@ updates:
         patterns:
           - "version.quarkus"
           - "io.quarkus:*"
-      qodeql:
-        patterns:
-          - "github/codeql-action*"
     ignore:
       - dependency-name: "jakarta.ws.rs:jakarta.ws.rs-api"
       - dependency-name: "org.jboss.resteasy:*"
